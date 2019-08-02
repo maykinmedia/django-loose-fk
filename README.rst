@@ -50,7 +50,47 @@ Install
 Usage
 =====
 
-<document or refer to docs>
+At the core sits a (virtual) django model field.
+
+.. code-block:: python
+
+    from django_loose_fk.fields import FkOrURLField
+
+    class SomeModel(models.Model):
+        name = models.CharField(max_length=100)
+
+
+    class OtherModel(models.Model):
+        local = models.ForeignKey(SomeModel, on_delete=models.CASCADE, blank=True, null=True)
+        remote = models.URLField(blank=True)
+        relation = FkOrURLField(fk_field="local", url_field="remote")
+
+
+You can now create objects with either local instances or URLs:
+
+.. code-block:: python
+
+    some_local = SomeModel.objects.get()
+    OtherModel.objects.create(relation=some_local)
+
+    OtherModel.objects.create(relation="https://example.com/remote.json")
+
+
+Accessing the attribute will always yield an instance:
+
+.. code-block:: python
+
+    >>> other = OtherModel.objects.get(id=1)  # local FK
+    >>> other.relation
+    <SomeModel (pk: 1)>
+
+    >>> other = OtherModel.objects.get(id=2)  # remote URL
+    >>> other.relation
+    <SomeModel (pk: None)>
+
+In the case of a remote URL, the URL will be fetched and the JSON response used
+as init kwargs for a model instance. The ``.save()`` method is blocked for
+remote instances to prevent mistakes.
 
 
 .. |build-status| image:: https://travis-ci.org/maykinmedia/django-loose-fk.svg?branch=develop
