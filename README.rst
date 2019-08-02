@@ -3,7 +3,7 @@ Django Loose FK
 ===============
 
 :Version: 0.1.0
-:Source: https://github.com/maykinmedia/django_loose_fk
+:Source: https://github.com/maykinmedia/django-loose-fk
 :Keywords: ``ForeignKey``, ``URL reference``, ``decentralization``, ``integrity``
 :PythonVersion: 3.7
 
@@ -44,7 +44,7 @@ Install
 
 .. code-block:: bash
 
-    pip install django_loose_fk
+    pip install django-loose-fk
 
 
 Usage
@@ -53,20 +53,20 @@ Usage
 <document or refer to docs>
 
 
-.. |build-status| image:: https://travis-ci.org/maykinmedia/django_loose_fk.svg?branch=develop
-    :target: https://travis-ci.org/maykinmedia/django_loose_fk
+.. |build-status| image:: https://travis-ci.org/maykinmedia/django-loose-fk.svg?branch=develop
+    :target: https://travis-ci.org/maykinmedia/django-loose-fk
 
-.. |requirements| image:: https://requires.io/github/maykinmedia/django_loose_fk/requirements.svg?branch=develop
-    :target: https://requires.io/github/maykinmedia/django_loose_fk/requirements/?branch=develop
+.. |requirements| image:: https://requires.io/github/maykinmedia/django-loose-fk/requirements.svg?branch=develop
+    :target: https://requires.io/github/maykinmedia/django-loose-fk/requirements/?branch=develop
     :alt: Requirements status
 
-.. |coverage| image:: https://codecov.io/gh/maykinmedia/django_loose_fk/branch/develop/graph/badge.svg
-    :target: https://codecov.io/gh/maykinmedia/django_loose_fk
+.. |coverage| image:: https://codecov.io/gh/maykinmedia/django-loose-fk/branch/develop/graph/badge.svg
+    :target: https://codecov.io/gh/maykinmedia/django-loose-fk
     :alt: Coverage status
 
-.. |python-versions| image:: https://img.shields.io/pypi/pyversions/django_loose_fk.svg
+.. |python-versions| image:: https://img.shields.io/pypi/pyversions/django-loose-fk.svg
 
-.. |django-versions| image:: https://img.shields.io/pypi/djversions/django_loose_fk.svg
+.. |django-versions| image:: https://img.shields.io/pypi/djversions/django-loose-fk.svg
 
-.. |pypi-version| image:: https://img.shields.io/pypi/v/django_loose_fk.svg
-    :target: https://pypi.org/project/django_loose_fk/
+.. |pypi-version| image:: https://img.shields.io/pypi/v/django-loose-fk.svg
+    :target: https://pypi.org/project/django-loose-fk/
