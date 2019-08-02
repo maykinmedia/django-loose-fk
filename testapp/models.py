@@ -14,10 +14,6 @@ class ZaakType(models.Model):
         return self.name
 
 
-fk_filled = models.Q(_zaaktype__isnull=False) & models.Q(extern_zaaktype="")
-url_filled = models.Q(_zaaktype__isnull=True) & ~models.Q(extern_zaaktype="")
-
-
 class Zaak(models.Model):
     name = models.CharField("name", max_length=50)
 
@@ -30,11 +26,6 @@ class Zaak(models.Model):
     class Meta:
         verbose_name = "zaak"
         verbose_name_plural = "zaken"
-        constraints = [
-            models.CheckConstraint(
-                check=fk_filled | url_filled, name="fk_or_url_filled"
-            )
-        ]
 
     def __str__(self):
         return self.name

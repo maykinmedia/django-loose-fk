@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Union
 from django.core import checks
 from django.db import models
 from django.db.models import Field
-from django.db.models.base import ModelBase
+from django.db.models.base import ModelBase, Options
 
 from .loaders import RequestsLoader as Loader
 
@@ -62,11 +62,36 @@ class FkOrURLField(models.Field):
         self.model = cls
 
         cls._meta.add_field(self)
+        self._add_check_constraint(cls._meta)
 
         # install the descriptor
         setattr(cls, self.name, FkOrURLDescriptor(self))
 
         # TODO: add hidden URLField to the model as well (virtual field)
+
+    def _add_check_constraint(
+        self, options: Options, name: str = "fk_or_url_filled"
+    ) -> None:
+        """
+        Create the DB constraints and add them if they're not present yet.
+        """
+        # URL field is empty if empty string or None
+        empty_url_field = models.Q(**{self.url_field: ""})
+        empty_fk_field = models.Q(**{f"{self.fk_field}__isnull": True})
+
+        fk_filled = ~empty_fk_field & empty_url_field
+        url_filled = empty_fk_field & ~empty_url_field
+
+        # one of both MUST be filled and they cannot be filled both at the
+        # same time
+        check = fk_filled | url_filled
+
+        # check if the same constraint already exists or not - if it does, we
+        # don't need to add it
+        if any((constraint.check == check for constraint in options.constraints)):
+            return
+
+        options.constraints.append(models.CheckConstraint(check=check, name=name))
 
     @property
     def _fk_field(self) -> models.ForeignKey:
@@ -103,8 +128,14 @@ class FkOrURLField(models.Field):
                     id="fk_or_url_field.E002",
                 )
             )
-
-        # TODO: check for missing check constraint?
+        elif self._url_field.null:
+            errors.append(
+                checks.Error(
+                    f"The URLField '{self.url_field}' may not be nullable",
+                    obj=self,
+                    id="fk_or_url_field.E003",
+                )
+            )
 
         return errors
 
