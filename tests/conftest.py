@@ -1,6 +1,8 @@
-# import pytest
+import pytest
+from rest_framework.test import APIClient
 
 
-# @pytest.fixture
-# def some_fixture(request):
-#     return 'foo'
+@pytest.fixture()
+def api_client(request) -> APIClient:
+    client = APIClient()
+    return client

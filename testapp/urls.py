@@ -1,3 +1,3 @@
-from django.urls import path
+from .api import router
 
-urlpatterns = []
+urlpatterns = router.urls
