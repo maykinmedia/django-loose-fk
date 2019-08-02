@@ -7,7 +7,7 @@ SECRET_KEY = "so-secret-i-cant-believe-you-are-looking-at-this"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "django_loose_fk.db"),
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
 
