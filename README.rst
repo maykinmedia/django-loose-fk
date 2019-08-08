@@ -92,6 +92,35 @@ In the case of a remote URL, the URL will be fetched and the JSON response used
 as init kwargs for a model instance. The ``.save()`` method is blocked for
 remote instances to prevent mistakes.
 
+Loaders
+-------
+
+Loaders are pluggable interfaces to load data. The default loader is
+``django_loose_fk.loaders.RequestsLoader``, which depends on the ``requests``
+library to fetch the data.
+
+You can specify a global default loader with the setting ``DEFAULT_LOOSE_FK_LOADER``
+
+.. code-block:: python
+
+    DEFAULT_LOOSE_FK_LOADER = "django_loose_fk.loaders.RequestsLoader"
+
+or override the loader on a per-field basis:
+
+.. code-block:: python
+
+    from django_loose_fk.loaders import RequestsLoader
+
+    class MyModel(models.Model):
+        ...
+
+        relation = FkOrURLField(
+            fk_field="local",
+            url_field="remote",
+            loader=RequestsLoader()
+        )
+
+
 
 .. |build-status| image:: https://travis-ci.org/maykinmedia/django-loose-fk.svg?branch=develop
     :target: https://travis-ci.org/maykinmedia/django-loose-fk
