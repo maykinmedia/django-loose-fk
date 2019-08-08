@@ -4,12 +4,25 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 SECRET_KEY = "so-secret-i-cant-believe-you-are-looking-at-this"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
-    }
+PG_DB = {
+    "ENGINE": "django.db.backends.postgresql",
+    "NAME": "postgres",
+    "USER": "postgres",
 }
+
+SQLITE_DB = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+}
+
+
+def get_db():
+    DB = os.getenv("DB", "sqlite")
+    MAP = {"sqlite": SQLITE_DB, "postgres": PG_DB}
+    return MAP[DB]
+
+
+DATABASES = {"default": get_db()}
 
 INSTALLED_APPS = ["django_loose_fk", "testapp"]
 
