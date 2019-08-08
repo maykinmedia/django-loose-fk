@@ -32,3 +32,6 @@ class RequestsLoader:
         # accidentally persisting remote objects to local database
         instance.save = forbidden_save
         return instance
+
+
+DefaultLoader = RequestsLoader

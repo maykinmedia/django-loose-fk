@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Type, Union
 
 from django.core import checks
 from django.db import models
 from django.db.models import Field
 from django.db.models.base import ModelBase, Options
 
-from .loaders import RequestsLoader as Loader
+from .loaders import DefaultLoader
 
 InstanceOrUrl = Union[models.Model, str]
 
@@ -19,6 +19,8 @@ class FkOrURLField(models.Field):
     blank: bool = False
     null: bool = False
     help_text: Optional[str] = ""
+
+    loader_class: Type = DefaultLoader
 
     name = None
 
@@ -197,6 +199,7 @@ class FkOrURLDescriptor:
             raise ValueError("No FK value and no URL value, this is not allowed!")
 
         remote_model = self.field._fk_field.related_model
+        Loader = self.field.loader_class
         remote_loader = Loader(url=url_value, model=remote_model)
         return remote_loader.load()
 
