@@ -68,15 +68,26 @@ def test_create_with_local_m2m():
     assert type_a in b.type.a_types.all()
 
 
-class TypeBLoader(BaseLoader):
+class TypeLoader(BaseLoader):
     @staticmethod
     def fetch_object(url: str) -> dict:
-        return {"url": url, "name": "b", "a_types": ["https://example.com/type_a"]}
+        data = {"url": url}
+
+        if url.endswith("a"):
+            data.update(name="a")
+        elif url.endswith("b"):
+            data.update(name="b", a_types=["https://example.com/type-a"])
+        else:
+            raise ValueError("Unknown URL")
+
+        return data
 
 
 def test_create_with_remote_m2m(settings):
-    settings.DEFAULT_LOOSE_FK_LOADER = "tests.test_model_field_interface.TypeBLoader"
+    settings.DEFAULT_LOOSE_FK_LOADER = "tests.test_model_field_interface.TypeLoader"
 
     b = B.objects.create(type="https://example.com/type-b")
 
     assert b.type.name == "b"
+    a_type = b.type.a_types.get()
+    assert a_type.name == "a"

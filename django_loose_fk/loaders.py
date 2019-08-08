@@ -20,7 +20,7 @@ class BaseLoader:
     def load(self, url: str, model: ModelBase) -> models.Model:
         # TODO: use a serializer layer in between
         data = self.fetch_object(url)
-        return get_model_instance(model, data)
+        return get_model_instance(model, data, loader=self)
 
 
 class RequestsLoader(BaseLoader):
