@@ -45,3 +45,23 @@ class DummyModel(models.Model):
     zaaktype2 = FkOrURLField(
         fk_field="_zaaktype2", url_field="extern_zaaktype2", blank=True, null=True
     )
+
+
+# m2m setups
+
+
+class TypeA(models.Model):
+    name = models.CharField("name", max_length=50)
+
+
+class TypeB(models.Model):
+    name = models.CharField("name", max_length=50)
+    a_types = models.ManyToManyField("TypeA", blank=True)
+
+
+class B(models.Model):
+    local_type = models.ForeignKey(
+        "TypeB", null=True, blank=True, on_delete=models.CASCADE
+    )
+    remote_type = models.URLField(blank=True)
+    type = FkOrURLField("local_type", "remote_type", blank=True)
