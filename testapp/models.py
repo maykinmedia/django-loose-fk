@@ -65,3 +65,9 @@ class B(models.Model):
     )
     remote_type = models.URLField(blank=True)
     type = FkOrURLField("local_type", "remote_type", blank=True)
+
+
+class C(models.Model):
+    local_b = models.ForeignKey("B", on_delete=models.CASCADE, blank=True, null=True)
+    remote_b = models.URLField(blank=True)
+    b = FkOrURLField("local_b", "remote_b")
