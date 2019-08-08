@@ -5,6 +5,8 @@ import pytest
 import requests_mock
 from testapp.models import B, TypeA, TypeB, Zaak, ZaakType
 
+from django_loose_fk.loaders import BaseLoader
+
 pytestmark = pytest.mark.django_db
 
 
@@ -64,3 +66,17 @@ def test_create_with_local_m2m():
 
     assert b.type.pk is not None
     assert type_a in b.type.a_types.all()
+
+
+class TypeBLoader(BaseLoader):
+    @staticmethod
+    def fetch_object(url: str) -> dict:
+        return {"url": url, "name": "b", "a_types": ["https://example.com/type_a"]}
+
+
+def test_create_with_remote_m2m(settings):
+    settings.DEFAULT_LOOSE_FK_LOADER = "tests.test_model_field_interface.TypeBLoader"
+
+    b = B.objects.create(type="https://example.com/type-b")
+
+    assert b.type.name == "b"
