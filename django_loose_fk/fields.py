@@ -70,7 +70,7 @@ class FkOrURLField(models.Field):
         # TODO: add hidden URLField to the model as well (virtual field)
 
     def _add_check_constraint(
-        self, options: Options, name: str = "fk_or_url_filled"
+        self, options: Options, name: str = "{fk_field}_or_{url_field}_filled"
     ) -> None:
         """
         Create the DB constraints and add them if they're not present yet.
@@ -91,6 +91,7 @@ class FkOrURLField(models.Field):
         if any((constraint.check == check for constraint in options.constraints)):
             return
 
+        name = name.format(fk_field=self.fk_field, url_field=self.url_field)
         options.constraints.append(models.CheckConstraint(check=check, name=name))
 
     @property

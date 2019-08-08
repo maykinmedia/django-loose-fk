@@ -29,3 +29,17 @@ class Zaak(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class DummyModel(models.Model):
+    _zaaktype1 = models.ForeignKey(
+        "ZaakType", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    extern_zaaktype1 = models.URLField(blank=True)
+    zaaktype1 = FkOrURLField(fk_field="_zaaktype1", url_field="extern_zaaktype1")
+
+    _zaaktype2 = models.ForeignKey(
+        "ZaakType", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    extern_zaaktype2 = models.URLField(blank=True)
+    zaaktype2 = FkOrURLField(fk_field="_zaaktype2", url_field="extern_zaaktype2")
