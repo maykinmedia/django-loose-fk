@@ -34,6 +34,7 @@ class FkOrURLField(models.Field):
     default = models.NOT_PROVIDED
     blank = False
     db_index = False
+    db_column = None
     serialize = True
     unique_for_date = None
     unique_for_month = None
@@ -88,7 +89,13 @@ class FkOrURLField(models.Field):
 
         # check if the same constraint already exists or not - if it does, we
         # don't need to add it
-        if any((constraint.check == check for constraint in options.constraints)):
+        if any(
+            (
+                constraint.check == check
+                for constraint in options.constraints
+                if hasattr(constraint, "check")
+            )
+        ):
             return
 
         name = name.format(fk_field=self.fk_field, url_field=self.url_field)
