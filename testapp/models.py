@@ -42,4 +42,6 @@ class DummyModel(models.Model):
         "ZaakType", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     extern_zaaktype2 = models.URLField(blank=True)
-    zaaktype2 = FkOrURLField(fk_field="_zaaktype2", url_field="extern_zaaktype2")
+    zaaktype2 = FkOrURLField(
+        fk_field="_zaaktype2", url_field="extern_zaaktype2", blank=True, null=True
+    )

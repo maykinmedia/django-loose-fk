@@ -16,23 +16,25 @@ class FkOrURLField(models.Field):
     fk_field: str
     url_field: str
     verbose_name: Optional[str] = None
+    blank: bool = False
+    null: bool = False
     help_text: Optional[str] = ""
 
     name = None
 
-    # attributes that django.db.models.fields.Field normally set
+    # attributes that django.db.models.fields.Field normally sets
     creation_counter = 0
 
     remote_field = None
     is_relation = False
     primary_key = False
+    auto_created = False
     concrete = False
     column = None
 
     many_to_many = None
     null = False
     default = models.NOT_PROVIDED
-    blank = False
     db_index = False
     db_column = None
     serialize = True
@@ -67,8 +69,6 @@ class FkOrURLField(models.Field):
 
         # install the descriptor
         setattr(cls, self.name, FkOrURLDescriptor(self))
-
-        # TODO: add hidden URLField to the model as well (virtual field)
 
     def _add_check_constraint(
         self, options: Options, name: str = "{fk_field}_or_{url_field}_filled"
@@ -164,12 +164,7 @@ class FkOrURLField(models.Field):
 
     def deconstruct(self):
         path = "%s.%s" % (self.__class__.__module__, self.__class__.__qualname__)
-        keywords = {
-            "fk_field": self.fk_field,
-            "url_field": self.url_field,
-            "verbose_name": self.verbose_name,
-            "help_text": self.help_text,
-        }
+        keywords = {"fk_field": self.fk_field, "url_field": self.url_field}
         return (self.name, path, [], keywords)
 
 
@@ -189,6 +184,9 @@ class FkOrURLDescriptor:
         """
         Get the related instance through the forward relation.
         """
+        if instance is None:
+            return self
+
         # if the value is select_related, this will hit that cache
         fk_value = getattr(instance, self.fk_field_name)
         if fk_value is not None:
