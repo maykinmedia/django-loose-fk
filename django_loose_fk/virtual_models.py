@@ -65,10 +65,9 @@ def virtual_model_factory(model: ModelBase, loader) -> VirtualModelBase:
 
 def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
     field_names = [
-        field.name
-        for field in model._meta.get_fields()
-        if (field.concrete and not field.auto_created)
+        field.name for field in model._meta.get_fields() if not field.auto_created
     ]
+
     # only keep known fields
     data = {key: value for key, value in data.items() if key in field_names}
 
@@ -88,13 +87,18 @@ class QueryList:
         return self.items[0]
 
 
-class M2MHandler:
+class BaseHandler:
     def __init__(self, field_name: str, loader, remote_model: ModelBase):
         self.field_name = field_name
         self.loader = loader
         self.remote_model = remote_model
 
-    def __get__(self, instance, cls=None):
+    def __set__(self, instance: models.Model, value: List[DictOrUrl]):
+        instance._loose_fk_data[self.field_name] = value
+
+
+class M2MHandler(BaseHandler):
+    def __get__(self, instance, cls=None) -> QueryList:
         raw_data = instance._loose_fk_data.get(self.field_name, [])
         assert all((isinstance(url, str) for url in raw_data))
 
@@ -104,8 +108,14 @@ class M2MHandler:
 
         return QueryList(loaded_data)
 
-    def __set__(self, instance: models.Model, value: List[DictOrUrl]):
-        instance._loose_fk_data[self.field_name] = value
+
+class FKHandler(BaseHandler):
+    def __get__(self, instance, cls=None) -> models.Model:
+        raw_data = instance._loose_fk_data.get(self.field_name, None)
+        if raw_data is None:
+            return None
+        assert isinstance(raw_data, str)
+        return self.loader.load(url=raw_data, model=self.remote_model)
 
 
-HANDLERS = {models.ManyToManyField: M2MHandler}
+HANDLERS = {models.ForeignKey: FKHandler, models.ManyToManyField: M2MHandler}
