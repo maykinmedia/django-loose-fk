@@ -3,7 +3,7 @@ Test that it's possibly to handle remote/local objects transparently.
 """
 import pytest
 import requests_mock
-from testapp.models import Zaak, ZaakType
+from testapp.models import B, TypeA, TypeB, Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db
 
@@ -53,3 +53,14 @@ def test_accessor_remote_url():
 
     with pytest.raises(RuntimeError):
         zaaktype.save()
+
+
+def test_create_with_local_m2m():
+    type_a = TypeA.objects.create(name="a")
+    type_b = TypeB.objects.create(name="b")
+    type_b.a_types.set([type_a])
+
+    b = B.objects.create(type=type_b)
+
+    assert b.type.pk is not None
+    assert type_a in b.type.a_types.all()
