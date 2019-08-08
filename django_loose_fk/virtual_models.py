@@ -80,11 +80,26 @@ class QueryList:
         self.items = items
 
     def __iter__(self):
-        return self.items
+        return iter(self.items)
 
     def get(self):
         assert len(self.items) == 1
         return self.items[0]
+
+    def first(self):
+        return self.items[0] if self.items else None
+
+    def all(self):
+        return self.items
+
+    def count(self):
+        return len(self.items)
+
+    def filter(self, *expressions, **filters) -> "QueryList":
+        raise NotImplementedError
+
+    def exclude(self, *expressions, **filters) -> "QueryList":
+        raise NotImplementedError
 
 
 class BaseHandler:
