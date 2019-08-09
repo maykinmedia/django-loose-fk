@@ -67,15 +67,23 @@ class FKOrURLField(fields.CharField):
             return url_value
         return super().get_attribute(instance)
 
-    def to_internal_value(self, data: str) -> InstanceOrUrl:
+    def to_internal_value(self, data: str) -> models.Model:
         url = super().to_internal_value(data)
         parsed = urlparse(url)
+
+        assert isinstance(
+            url, str
+        ), "You must use HyperlinkedRelatedField for the local FKs"
 
         # test if it's a local URL
         host = self.context["request"].get_host()
         is_local = parsed.netloc == host
+
         if not is_local:
-            return url
+            # load the remote object
+            model_class, model_field = self._get_model_and_field()
+            instance = model_class(**{model_field.name: url})
+            return getattr(instance, model_field.name)
 
         # resolve the path/url...
         try:

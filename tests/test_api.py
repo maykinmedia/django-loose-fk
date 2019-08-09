@@ -57,19 +57,16 @@ def test_write_local_url(api_client):
 
 def test_write_remote_url(api_client):
     url = reverse("zaak-list")
-    data = {"name": "test", "zaaktype": "https://example.com/zaaktypen/123"}
-
-    response = api_client.post(url, data)
-
-    assert response.status_code == 201
-    zaak = Zaak.objects.get()
-    assert zaak.extern_zaaktype == "https://example.com/zaaktypen/123"
+    zaaktype_url = "https://example.com/zaaktypen/123"
 
     with requests_mock.Mocker() as m:
-        m.get(
-            "https://example.com/zaaktypen/123",
-            json={"url": "https://example.com/zaaktypen/123", "name": "test"},
-        )
+        m.get(zaaktype_url, json={"url": zaaktype_url, "name": "test"})
+
+        response = api_client.post(url, {"name": "test", "zaaktype": zaaktype_url})
+
+        assert response.status_code == 201
+        zaak = Zaak.objects.get()
+        assert zaak.extern_zaaktype == zaaktype_url
         assert zaak.zaaktype.pk is None
 
 

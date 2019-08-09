@@ -2,10 +2,37 @@ from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 from django.apps import apps
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import models
 from django.db.models.base import ModelBase
 
 DictOrUrl = Union[Dict[str, Any], str]
+
+
+def is_url(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+
+    validator = URLValidator(schemes=["http", "https"])
+    try:
+        validator(value)
+    except ValidationError:
+        return False
+
+    return True
+
+
+def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
+    field_names = [
+        field.name for field in model._meta.get_fields() if not field.auto_created
+    ] + ["url"]
+
+    # only keep known fields
+    data = {key: value for key, value in data.items() if key in field_names}
+
+    virtual_model = virtual_model_factory(model, loader=loader)
+    return virtual_model(**data)
 
 
 class VirtualModelBase(ModelBase):
@@ -31,9 +58,14 @@ class VirtualModelBase(ModelBase):
 
 
 class ProxyMixin:
-    def __init__(self, *args, **kwargs):
-        self._loose_fk_data = {}
+    def __init__(self, url: str, *args, **kwargs):
+        self._loose_fk_data = {"url": url}
         super().__init__(*args, **kwargs)
+
+    def __eq__(self, other):
+        if isinstance(other, str):  # compare URLs
+            return self._loose_fk_data["url"] == other
+        return super().__eq__(other)
 
     def save(self, *args, **kwargs):
         raise RuntimeError("Saving remotely fetched objects is forbidden.")
@@ -63,24 +95,23 @@ def virtual_model_factory(model: ModelBase, loader) -> VirtualModelBase:
     return Proxy
 
 
-def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
-    field_names = [
-        field.name for field in model._meta.get_fields() if not field.auto_created
-    ]
-
-    # only keep known fields
-    data = {key: value for key, value in data.items() if key in field_names}
-
-    virtual_model = virtual_model_factory(model, loader=loader)
-    return virtual_model(**data)
-
-
 class QueryList:
     def __init__(self, items: list):
         self.items = items
 
+    def __repr__(self):
+        return f"<QueryList items={repr(self.items)}>"
+
     def __iter__(self):
         return iter(self.items)
+
+    def __contains__(self, item):
+        # treat URls specially (for now at least)
+        if not is_url(item):
+            return item in self.items
+
+        urls = (_item._loose_fk_data.get("url") for _item in self.items)
+        return item in urls
 
     def get(self):
         assert len(self.items) == 1
