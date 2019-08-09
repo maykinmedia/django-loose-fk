@@ -7,11 +7,9 @@ from django.db.models.base import ModelBase
 from django.utils.functional import LazyObject, empty
 from django.utils.module_loading import import_string
 
+from .virtual_models import get_model_instance
+
 SETTING = "DEFAULT_LOOSE_FK_LOADER"
-
-
-def forbidden_save(*args, **kwargs):
-    raise RuntimeError("Saving remotely fetched objects is forbidden.")
 
 
 class BaseLoader:
@@ -22,14 +20,7 @@ class BaseLoader:
     def load(self, url: str, model: ModelBase) -> models.Model:
         # TODO: use a serializer layer in between
         data = self.fetch_object(url)
-        del data["url"]
-
-        instance = model(**data)
-        # replace the save function so that it is blocked - prevents
-        # accidentally persisting remote objects to local database
-        instance.save = forbidden_save
-
-        return instance
+        return get_model_instance(model, data, loader=self)
 
 
 class RequestsLoader(BaseLoader):

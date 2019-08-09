@@ -7,6 +7,7 @@ from django.db.models import Field
 from django.db.models.base import ModelBase, Options
 
 from .loaders import BaseLoader, default_loader
+from .virtual_models import ProxyMixin
 
 InstanceOrUrl = Union[models.Model, str]
 
@@ -208,6 +209,9 @@ class FkOrURLDescriptor:
 
         Delegate the set action to the appropriate field.
         """
+        if isinstance(value, ProxyMixin):
+            value = value._loose_fk_data["url"]
+
         if isinstance(value, models.Model):
             field_name = self.fk_field_name
         elif isinstance(value, str):

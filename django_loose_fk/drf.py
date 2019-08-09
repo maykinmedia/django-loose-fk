@@ -17,7 +17,6 @@ from rest_framework.utils.model_meta import get_field_info
 
 from .fields import FkOrURLField, InstanceOrUrl
 from .utils import get_resource_for_path
-from .validators import InstanceOrURLValidator
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +43,6 @@ class FKOrURLField(fields.CharField):
         ),
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        validator = InstanceOrURLValidator(message=self.error_messages["invalid"])
-        self.validators.append(validator)
-
     def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
         model_class = self.parent.Meta.model
         model_field = model_class._meta.get_field(self.source)
@@ -67,15 +61,23 @@ class FKOrURLField(fields.CharField):
             return url_value
         return super().get_attribute(instance)
 
-    def to_internal_value(self, data: str) -> InstanceOrUrl:
+    def to_internal_value(self, data: str) -> models.Model:
         url = super().to_internal_value(data)
         parsed = urlparse(url)
+
+        assert isinstance(
+            url, str
+        ), "You must use HyperlinkedRelatedField for the local FKs"
 
         # test if it's a local URL
         host = self.context["request"].get_host()
         is_local = parsed.netloc == host
+
         if not is_local:
-            return url
+            # load the remote object
+            model_class, model_field = self._get_model_and_field()
+            instance = model_class(**{model_field.name: url})
+            return getattr(instance, model_field.name)
 
         # resolve the path/url...
         try:
