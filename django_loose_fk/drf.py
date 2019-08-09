@@ -17,7 +17,6 @@ from rest_framework.utils.model_meta import get_field_info
 
 from .fields import FkOrURLField, InstanceOrUrl
 from .utils import get_resource_for_path
-from .validators import InstanceOrURLValidator
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +42,6 @@ class FKOrURLField(fields.CharField):
             "This *may* be because you have insufficient read permissions."
         ),
     }
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        validator = InstanceOrURLValidator(message=self.error_messages["invalid"])
-        self.validators.append(validator)
 
     def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
         model_class = self.parent.Meta.model
