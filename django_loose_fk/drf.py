@@ -4,21 +4,91 @@ Django Rest Framework integration.
 Provides a custom field.
 """
 import logging
+from dataclasses import dataclass
 from typing import Tuple
-from urllib.parse import urlparse
+from urllib.parse import ParseResult, urlparse
 
+from django.core.validators import URLValidator as _URLValidator
 from django.db import models
 from django.db.models.base import ModelBase
 from django.http import Http404
 from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import fields
+from rest_framework import fields, serializers
 from rest_framework.utils.model_meta import get_field_info
 
 from .fields import FkOrURLField, InstanceOrUrl
+from .loaders import FetchError
 from .utils import get_resource_for_path
 
 logger = logging.getLogger(__name__)
+
+
+# django tests use testserver host, but that doesn't pass core URLValidation
+# regex...
+class URLValidator(_URLValidator):
+    def __call__(self, value):
+        if value.startswith("http://testserver/"):
+            return
+        super().__call__(value)
+
+
+@dataclass
+class Resolver:
+    """
+    Resolve URLs to remote or local objects.
+    """
+
+    model: ModelBase
+    field: FkOrURLField
+
+    def resolve(self, host: str, url: str) -> models.Model:
+        parsed = urlparse(url)
+        is_local = parsed.netloc == host
+        return self.resolve_local(parsed) if is_local else self.resolve_remote(url)
+
+    def resolve_local(self, parsed: ParseResult) -> models.Model:
+        return get_resource_for_path(parsed.path)
+
+    def resolve_remote(self, url: str) -> models.Model:
+        # load the remote object
+        instance = self.model(**{self.field.name: url})
+        return getattr(instance, self.field.name)
+
+
+class FKOrURLValidator:
+    """
+    Validate that the URL is a valid remote object or local FK.
+    """
+
+    message = _(
+        'Bad URL "{url}" - object could not be fetched. '
+        "This *may* be because you have insufficient read permissions."
+    )
+
+    def set_context(self, serializer_field):
+        model, field = serializer_field._get_model_and_field()
+        self.resolver = Resolver(model, field)
+        self.host = serializer_field.context["request"].get_host()
+        serializer_field.context["resolver"] = self.resolver
+
+    def __call__(self, url: str):
+        assert isinstance(
+            url, str
+        ), "You must use HyperlinkedRelatedField for the local FKs"
+
+        try:
+            self.resolver.resolve(self.host, url)
+        except FetchError as exc:  # remote resolution fails
+            logger.info("Could not fetch %s: %r", url, exc, exc_info=exc)
+            raise serializers.ValidationError(
+                self.message.format(url=url), code="bad-url"
+            )
+        except (Http404, models.ObjectDoesNotExist):  # local resolution fails
+            logger.info("Local lookup for %s didn't resolve to an object.", url)
+            raise serializers.ValidationError(
+                self.message.format(url=url), code="does_not_exist"
+            )
 
 
 class FKOrURLField(fields.CharField):
@@ -35,13 +105,16 @@ class FKOrURLField(fields.CharField):
         path.
     """
 
-    default_error_messages = {
-        "invalid": _("Enter a valid URL."),
-        "does_not_exist": _(
-            'Invalid URL "{url}" - object does not exist. '
-            "This *may* be because you have insufficient read permissions."
-        ),
-    }
+    default_error_messages = {"invalid": _("Enter a valid URL.")}
+
+    def __init__(self, *args, **kwargs):
+        self.lookup_field = kwargs.pop("lookup_field", None)
+        super().__init__(*args, **kwargs)
+
+        self.validators += [
+            URLValidator(message=self.error_messages["invalid"]),
+            FKOrURLValidator(),
+        ]
 
     def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
         model_class = self.parent.Meta.model
@@ -61,31 +134,12 @@ class FKOrURLField(fields.CharField):
             return url_value
         return super().get_attribute(instance)
 
-    def to_internal_value(self, data: str) -> models.Model:
-        url = super().to_internal_value(data)
-        parsed = urlparse(url)
+    def run_validation(self, *args, **kwargs) -> models.Model:
+        url = super().run_validation(*args, **kwargs)
 
-        assert isinstance(
-            url, str
-        ), "You must use HyperlinkedRelatedField for the local FKs"
-
-        # test if it's a local URL
         host = self.context["request"].get_host()
-        is_local = parsed.netloc == host
-
-        if not is_local:
-            # load the remote object
-            model_class, model_field = self._get_model_and_field()
-            instance = model_class(**{model_field.name: url})
-            return getattr(instance, model_field.name)
-
-        # resolve the path/url...
-        try:
-            obj = get_resource_for_path(parsed.path)
-        except Http404:
-            logger.info("Local lookup for %s didn't resolve to an object.", parsed.path)
-            self.fail("does_not_exist", url=data)
-        return obj
+        resolver = self.context["resolver"]
+        return resolver.resolve(host, url)
 
     def to_representation(self, value: InstanceOrUrl) -> str:
         if isinstance(value, str):
@@ -98,9 +152,15 @@ class FKOrURLField(fields.CharField):
         if value.pk is not None:
             info = get_field_info(model_class)
             fk_field_name = model_field.fk_field
+
+            extra_field_kwargs = self.parent.get_extra_kwargs().get(self.field_name, {})
             field_class, field_kwargs = self.parent.build_field(
                 fk_field_name, info, model_class, 0
             )
+            field_kwargs = self.parent.include_extra_kwargs(
+                field_kwargs, extra_field_kwargs
+            )
+            field_kwargs.pop("max_length", None)
             _field = field_class(**field_kwargs)
             _field.parent = self.parent
             return _field.to_representation(value)

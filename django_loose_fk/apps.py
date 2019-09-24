@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 from rest_framework import serializers
 
-from . import drf, fields
+from . import drf, fields, filters
 
 
 class DjangoLooseFkConfig(AppConfig):
@@ -10,6 +10,8 @@ class DjangoLooseFkConfig(AppConfig):
 
     def ready(self) -> None:
         register_serializer_field()
+
+        filters.register_field_default()
 
 
 def register_serializer_field() -> None:

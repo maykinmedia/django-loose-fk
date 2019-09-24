@@ -12,6 +12,10 @@ from .virtual_models import get_model_instance
 SETTING = "DEFAULT_LOOSE_FK_LOADER"
 
 
+class FetchError(Exception):
+    pass
+
+
 class BaseLoader:
     @staticmethod
     def fetch_object(url: str):
@@ -29,7 +33,10 @@ class RequestsLoader(BaseLoader):
         import requests
 
         response = requests.get(url)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise FetchError(exc.args[0]) from exc
         return response.json()
 
 

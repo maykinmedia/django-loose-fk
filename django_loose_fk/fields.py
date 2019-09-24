@@ -4,6 +4,8 @@ from typing import List, Optional, Tuple, Union
 from django.core import checks
 from django.db import models
 from django.db.models import Field
+from django.db.models.fields.related_lookups import RelatedIn
+from django.db.models.lookups import In as _In
 from django.db.models.base import ModelBase, Options
 
 from .loaders import BaseLoader, default_loader
@@ -57,6 +59,9 @@ class FkOrURLField(models.Field):
         if isinstance(other, Field):
             return self.creation_counter < other.creation_counter
         return NotImplemented
+
+    def __hash__(self):
+        return hash(self.creation_counter)
 
     def contribute_to_class(
         self, cls: ModelBase, name: str, private_only: bool = False
@@ -170,6 +175,10 @@ class FkOrURLField(models.Field):
         keywords = {"fk_field": self.fk_field, "url_field": self.url_field}
         return (self.name, path, [], keywords)
 
+    @property
+    def max_length(self) -> Union[None, int]:
+        return self._url_field.max_length
+
 
 @dataclass
 class FkOrURLDescriptor:
@@ -191,9 +200,11 @@ class FkOrURLDescriptor:
             return self
 
         # if the value is select_related, this will hit that cache
-        fk_value = getattr(instance, self.fk_field_name)
-        if fk_value is not None:
-            return fk_value
+        pk_value = getattr(instance, self.field._fk_field.attname)
+        if pk_value is not None:
+            fk_value = getattr(instance, self.fk_field_name)
+            if fk_value is not None:
+                return fk_value
 
         url_value = getattr(instance, self.url_field_name)
         if not url_value:
@@ -219,3 +230,97 @@ class FkOrURLDescriptor:
         else:
             raise TypeError(f"value is of type {type(value)}, which is not supported.")
         setattr(instance, field_name, value)
+
+
+def get_normalized_value(value):
+    if isinstance(value, models.Model):
+        return (value.pk,)
+    if not isinstance(value, tuple):
+        return (value,)
+    return value
+
+
+class In(RelatedIn):
+    """
+    Split the IN query into two IN queries, per datatype.
+
+    Creates an IN query for the url field values, and an IN query for the FK
+    field values, joined together by an OR.
+    """
+    lookup_name = "in"
+
+    def process_lhs(self, compiler, connection, lhs=None):
+        target = self.lhs.target
+        db_table = target.model._meta.db_table
+
+        url_lhs = target._url_field.get_col(db_table)
+        fk_lhs = target._fk_field.get_col(db_table)
+
+        url_lhs_sql, url_params = super().process_lhs(compiler, connection, lhs=url_lhs)
+        fk_lhs_sql, fk_params = super().process_lhs(compiler, connection, lhs=fk_lhs)
+
+        return (
+            url_lhs_sql,
+            url_params,
+            fk_lhs_sql,
+            fk_params,
+        )
+
+    def process_rhs(self, compiler, connection):
+        if self.rhs_is_direct_value():
+            remote_rhs = [
+                obj._loose_fk_data["url"] for obj in self.rhs
+                if isinstance(obj, ProxyMixin)
+            ]
+
+            if remote_rhs:
+                _remote_lookup = _In(None, remote_rhs)
+                url_rhs_sql, url_rhs_params = _remote_lookup.process_rhs(compiler, connection)
+            else:
+                url_rhs_sql, url_rhs_params = None, ()
+
+            # filter out the remote objects
+            self.rhs = [obj for obj in self.rhs if not isinstance(obj, ProxyMixin)]
+            fk_rhs_sql, fk_rhs_params = super().process_rhs(compiler, connection)
+            # FIXME: params should be ints, something going wrong with db_prep_value...
+
+        else:
+            # we're dealing with something that can be expressed as SQL -> it's local only!
+            raise NotImplementedError
+
+        return url_rhs_sql, url_rhs_params, fk_rhs_sql, fk_rhs_params
+
+    def get_prep_lookup(self):
+        if self.rhs_is_direct_value():
+            # If we get here, we are dealing with single-column relations.
+            self.rhs = [get_normalized_value(val)[0] for val in self.rhs]
+        return super().get_prep_lookup()
+
+    def as_sql(self, compiler, connection):
+        # TODO: support connection.ops.max_in_list_size()
+        url_lhs_sql, url_params, fk_lhs_sql, fk_params = self.process_lhs(compiler, connection)
+        url_rhs_sql, url_rhs_params, fk_rhs_sql, fk_rhs_params = self.process_rhs(compiler, connection)
+
+        fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
+        fk_sql = (
+            "%s %s" % (fk_lhs_sql, fk_rhs_sql),
+            tuple(fk_params) + fk_rhs_params,
+        )
+
+        # no remote URLs to filter -> simple query
+        if not url_rhs_sql:
+            return fk_sql
+
+        url_rhs_sql = self.get_rhs_op(connection, url_rhs_sql)
+        url_sql = (
+            "%s %s" % (url_lhs_sql, url_rhs_sql),
+            tuple(url_params) + url_rhs_params,
+        )
+
+        params = url_params + fk_params
+        sql = "(%s OR %s)" % (url_sql[0], fk_sql[0])
+
+        return sql, params
+
+
+FkOrURLField.register_lookup(In)
