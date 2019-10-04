@@ -81,3 +81,34 @@ def test_write_invalid_local_url(api_client):
     assert response.status_code == 400
     assert "zaaktype" in response.data
     assert response.data["zaaktype"][0].code == "does_not_exist"
+
+
+def test_filter_zaaktype_remote_url(api_client):
+    url = reverse("zaak-list")
+    zaak = Zaak.objects.create(
+        name="test", zaaktype="https://example.com/zaaktypen/123"
+    )
+    zaak_url = reverse("zaak-detail", kwargs={"pk": zaak.pk})
+    Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/456")
+
+    response = api_client.get(url, {"zaaktype": "https://example.com/zaaktypen/123"})
+
+    assert len(response.data) == 1
+    assert response.data[0]["url"] == f"http://testserver{zaak_url}"
+
+
+def test_filter_zaaktype_local_fk(api_client):
+    url = reverse("zaak-list")
+    zaaktype1 = ZaakType.objects.create(name="foo")
+    zaaktype_path = reverse("zaaktype-detail", kwargs={"pk": zaaktype1.pk})
+    zaaktype2 = ZaakType.objects.create(name="bar")
+    zaak = Zaak.objects.create(name="test", zaaktype=zaaktype1)
+    Zaak.objects.create(name="test", zaaktype=zaaktype2)
+    zaak_url = reverse("zaak-detail", kwargs={"pk": zaak.pk})
+
+    response = api_client.get(
+        url, {"zaaktype": f"http://example.com{zaaktype_path}"}, HTTP_HOST="example.com"
+    )
+
+    assert len(response.data) == 1
+    assert response.data[0]["url"] == f"http://example.com{zaak_url}"
