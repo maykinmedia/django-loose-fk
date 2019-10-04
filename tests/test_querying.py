@@ -52,3 +52,16 @@ def test_in_lookup_with_virtual_model():
     qs = Zaak.objects.filter(zaaktype__in=[zaaktype])
 
     assert list(qs) == [zaak2]
+
+
+def test_in_lookup_mixed_local_remote():
+    local_zaaktype = ZaakType.objects.create(name="local")
+    zaak1 = Zaak.objects.create(zaaktype=local_zaaktype)
+    zaak2 = Zaak.objects.create(zaaktype="https://example.com/zt/123")
+    Zaak.objects.create(zaaktype="https://example.com/zt/456")
+
+    qs = Zaak.objects.filter(
+        zaaktype__in=["https://example.com/zt/123", local_zaaktype]
+    ).order_by("pk")
+
+    assert list(qs) == [zaak1, zaak2]

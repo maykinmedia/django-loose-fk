@@ -341,7 +341,7 @@ class In(RelatedIn):
         if not url_rhs_sql:
             return fk_sql
 
-        params = url_params + fk_params
+        params = url_sql[1] + fk_sql[1]
         sql = "(%s OR %s)" % (url_sql[0], fk_sql[0])
 
         return sql, params
