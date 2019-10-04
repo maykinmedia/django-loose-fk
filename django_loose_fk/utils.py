@@ -38,4 +38,15 @@ def get_resource_for_path(path: str) -> models.Model:
     if settings.FORCE_SCRIPT_NAME and path.startswith(settings.FORCE_SCRIPT_NAME):
         path = path[len(settings.FORCE_SCRIPT_NAME) :]
     viewset = get_viewset_for_path(path)
-    return viewset.get_object()
+
+    queryset = viewset.get_queryset()
+    lookup_url_kwarg = viewset.lookup_url_kwarg or viewset.lookup_field
+    filter_kwargs = {viewset.lookup_field: viewset.kwargs[lookup_url_kwarg]}
+
+    return queryset.get(**filter_kwargs)
+
+
+def get_subclasses(cls):
+    for subclass in cls.__subclasses__():
+        yield from get_subclasses(subclass)
+        yield subclass

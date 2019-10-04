@@ -12,10 +12,14 @@ from .virtual_models import get_model_instance
 SETTING = "DEFAULT_LOOSE_FK_LOADER"
 
 
+class FetchError(Exception):
+    pass
+
+
 class BaseLoader:
     @staticmethod
     def fetch_object(url: str):
-        raise NotImplementedError
+        raise NotImplementedError  # noqa
 
     def load(self, url: str, model: ModelBase) -> models.Model:
         # TODO: use a serializer layer in between
@@ -29,7 +33,10 @@ class RequestsLoader(BaseLoader):
         import requests
 
         response = requests.get(url)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise FetchError(exc.args[0]) from exc
         return response.json()
 
 
@@ -46,7 +53,7 @@ class DefaultLoader(LazyObject):
 
     def _reset(self, setting, **kwargs):
         if setting != SETTING:
-            return
+            return  # noqa
         self._wrapped = empty
 
     def _setup(self):

@@ -58,6 +58,9 @@ class FkOrURLField(models.Field):
             return self.creation_counter < other.creation_counter
         return NotImplemented
 
+    def __hash__(self):
+        return hash(self.creation_counter)
+
     def contribute_to_class(
         self, cls: ModelBase, name: str, private_only: bool = False
     ):
@@ -170,6 +173,10 @@ class FkOrURLField(models.Field):
         keywords = {"fk_field": self.fk_field, "url_field": self.url_field}
         return (self.name, path, [], keywords)
 
+    @property
+    def max_length(self) -> Union[None, int]:
+        return self._url_field.max_length
+
 
 @dataclass
 class FkOrURLDescriptor:
@@ -191,9 +198,11 @@ class FkOrURLDescriptor:
             return self
 
         # if the value is select_related, this will hit that cache
-        fk_value = getattr(instance, self.fk_field_name)
-        if fk_value is not None:
-            return fk_value
+        pk_value = getattr(instance, self.field._fk_field.attname)
+        if pk_value is not None:
+            fk_value = getattr(instance, self.fk_field_name)
+            if fk_value is not None:
+                return fk_value
 
         url_value = getattr(instance, self.url_field_name)
         if not url_value:
