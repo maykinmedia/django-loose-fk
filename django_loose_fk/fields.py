@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 from django.core import checks
+from django.core.exceptions import EmptyResultSet
 from django.db import models
 from django.db.models import Field
+from django.db.models.base import ModelBase, Options
 from django.db.models.fields.related_lookups import RelatedIn
 from django.db.models.lookups import In as _In
-from django.db.models.base import ModelBase, Options
 
 from .loaders import BaseLoader, default_loader
 from .virtual_models import ProxyMixin
@@ -232,9 +233,13 @@ class FkOrURLDescriptor:
         setattr(instance, field_name, value)
 
 
-def get_normalized_value(value):
+def get_normalized_value(value) -> tuple:
+    if isinstance(value, ProxyMixin):
+        return (value._loose_fk_data["url"],)
+
     if isinstance(value, models.Model):
         return (value.pk,)
+
     if not isinstance(value, tuple):
         return (value,)
     return value
@@ -247,6 +252,7 @@ class In(RelatedIn):
     Creates an IN query for the url field values, and an IN query for the FK
     field values, joined together by an OR.
     """
+
     lookup_name = "in"
 
     def process_lhs(self, compiler, connection, lhs=None):
@@ -259,34 +265,41 @@ class In(RelatedIn):
         url_lhs_sql, url_params = super().process_lhs(compiler, connection, lhs=url_lhs)
         fk_lhs_sql, fk_params = super().process_lhs(compiler, connection, lhs=fk_lhs)
 
-        return (
-            url_lhs_sql,
-            url_params,
-            fk_lhs_sql,
-            fk_params,
-        )
+        return (url_lhs_sql, url_params, fk_lhs_sql, fk_params)
+
+    def process_remote_rhs(self) -> List[str]:
+        """
+        Extract URLs to filter on for remote RHS.
+
+        self.rhs is normalized here already.
+        """
+        return [obj for obj in self.rhs if isinstance(obj, str)]
 
     def process_rhs(self, compiler, connection):
         if self.rhs_is_direct_value():
-            remote_rhs = [
-                obj._loose_fk_data["url"] for obj in self.rhs
-                if isinstance(obj, ProxyMixin)
-            ]
+            remote_rhs = self.process_remote_rhs()
 
             if remote_rhs:
-                _remote_lookup = _In(None, remote_rhs)
-                url_rhs_sql, url_rhs_params = _remote_lookup.process_rhs(compiler, connection)
+                target = self.lhs.target
+                db_table = target.model._meta.db_table
+                url_lhs = target._url_field.get_col(db_table)
+                _remote_lookup = _In(url_lhs, remote_rhs)
+                url_rhs_sql, url_rhs_params = _remote_lookup.process_rhs(
+                    compiler, connection
+                )
             else:
                 url_rhs_sql, url_rhs_params = None, ()
 
             # filter out the remote objects
-            self.rhs = [obj for obj in self.rhs if not isinstance(obj, ProxyMixin)]
-            fk_rhs_sql, fk_rhs_params = super().process_rhs(compiler, connection)
-            # FIXME: params should be ints, something going wrong with db_prep_value...
-
+            self.rhs = [obj for obj in self.rhs if obj not in remote_rhs]
+            if not self.rhs:
+                fk_rhs_sql, fk_rhs_params = None, ()
+            else:
+                fk_rhs_sql, fk_rhs_params = super().process_rhs(compiler, connection)
         else:
             # we're dealing with something that can be expressed as SQL -> it's local only!
-            raise NotImplementedError
+            url_rhs_sql, url_rhs_params = None, ()
+            fk_rhs_sql, fk_rhs_params = super().process_rhs(compiler, connection)
 
         return url_rhs_sql, url_rhs_params, fk_rhs_sql, fk_rhs_params
 
@@ -298,24 +311,35 @@ class In(RelatedIn):
 
     def as_sql(self, compiler, connection):
         # TODO: support connection.ops.max_in_list_size()
-        url_lhs_sql, url_params, fk_lhs_sql, fk_params = self.process_lhs(compiler, connection)
-        url_rhs_sql, url_rhs_params, fk_rhs_sql, fk_rhs_params = self.process_rhs(compiler, connection)
-
-        fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
-        fk_sql = (
-            "%s %s" % (fk_lhs_sql, fk_rhs_sql),
-            tuple(fk_params) + fk_rhs_params,
+        url_lhs_sql, url_params, fk_lhs_sql, fk_params = self.process_lhs(
+            compiler, connection
+        )
+        url_rhs_sql, url_rhs_params, fk_rhs_sql, fk_rhs_params = self.process_rhs(
+            compiler, connection
         )
 
-        # no remote URLs to filter -> simple query
+        if not fk_rhs_sql and not url_rhs_sql:
+            raise EmptyResultSet()
+
+        if fk_rhs_sql:
+            fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
+            fk_sql = (
+                "%s %s" % (fk_lhs_sql, fk_rhs_sql),
+                tuple(fk_params) + fk_rhs_params,
+            )
+
+        if url_rhs_sql:
+            url_rhs_sql = self.get_rhs_op(connection, url_rhs_sql)
+            url_sql = (
+                "%s %s" % (url_lhs_sql, url_rhs_sql),
+                tuple(url_params) + url_rhs_params,
+            )
+
+        if not fk_rhs_sql:
+            return url_sql
+
         if not url_rhs_sql:
             return fk_sql
-
-        url_rhs_sql = self.get_rhs_op(connection, url_rhs_sql)
-        url_sql = (
-            "%s %s" % (url_lhs_sql, url_rhs_sql),
-            tuple(url_params) + url_rhs_params,
-        )
 
         params = url_params + fk_params
         sql = "(%s OR %s)" % (url_sql[0], fk_sql[0])
