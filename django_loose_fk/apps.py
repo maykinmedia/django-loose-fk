@@ -9,6 +9,8 @@ class DjangoLooseFkConfig(AppConfig):
     name = "django_loose_fk"
 
     def ready(self) -> None:
+        from . import lookups  # noqa
+
         register_serializer_field()
 
         filters.register_field_default()
