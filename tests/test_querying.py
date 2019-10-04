@@ -8,6 +8,12 @@ from testapp.models import Zaak, ZaakType
 pytestmark = pytest.mark.django_db
 
 
+def test_empty_lookup():
+    qs = Zaak.objects.filter(zaaktype__in=[])
+
+    assert list(qs) == []
+
+
 def test_in_lookup_local_fk():
     local_zaaktype = ZaakType.objects.create(name="local")
     zaak1 = Zaak.objects.create(zaaktype=local_zaaktype)
