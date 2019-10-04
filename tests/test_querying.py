@@ -18,6 +18,20 @@ def test_in_lookup_local_fk():
     assert list(qs) == [zaak1]
 
 
+def test_in_lookup_local_fk_multiple_rhs():
+    local_zaaktype1 = ZaakType.objects.create(name="local1")
+    local_zaaktype2 = ZaakType.objects.create(name="local2")
+    zaak1 = Zaak.objects.create(zaaktype=local_zaaktype1)
+    zaak2 = Zaak.objects.create(zaaktype=local_zaaktype2)
+    Zaak.objects.create(zaaktype="https://example.com/zt/123")
+
+    qs = Zaak.objects.filter(zaaktype__in=[local_zaaktype1, local_zaaktype2]).order_by(
+        "id"
+    )
+
+    assert list(qs) == [zaak1, zaak2]
+
+
 def test_in_lookup_with_queryset_local_fk():
     local_zaaktype = ZaakType.objects.create(name="local")
     zaak1 = Zaak.objects.create(zaaktype=local_zaaktype)
@@ -36,6 +50,19 @@ def test_in_lookup_with_url_value():
     qs = Zaak.objects.filter(zaaktype__in=["https://example.com/zt/123"])
 
     assert list(qs) == [zaak2]
+
+
+def test_in_lookup_with_url_value_multiple_rhs():
+    local_zaaktype = ZaakType.objects.create(name="local")
+    Zaak.objects.create(zaaktype=local_zaaktype)
+    zaak2 = Zaak.objects.create(zaaktype="https://example.com/zt/123")
+    zaak3 = Zaak.objects.create(zaaktype="https://example.com/zt/456")
+
+    qs = Zaak.objects.filter(
+        zaaktype__in=["https://example.com/zt/123", "https://example.com/zt/456"]
+    ).order_by("id")
+
+    assert list(qs) == [zaak2, zaak3]
 
 
 def test_in_lookup_with_virtual_model():
