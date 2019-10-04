@@ -19,7 +19,7 @@ class FetchError(Exception):
 class BaseLoader:
     @staticmethod
     def fetch_object(url: str):
-        raise NotImplementedError
+        raise NotImplementedError  # noqa
 
     def load(self, url: str, model: ModelBase) -> models.Model:
         # TODO: use a serializer layer in between
@@ -53,7 +53,7 @@ class DefaultLoader(LazyObject):
 
     def _reset(self, setting, **kwargs):
         if setting != SETTING:
-            return
+            return  # noqa
         self._wrapped = empty
 
     def _setup(self):
