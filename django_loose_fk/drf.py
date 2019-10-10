@@ -5,7 +5,7 @@ Provides a custom field.
 """
 import logging
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Union
 from urllib.parse import ParseResult, urlparse
 
 from django.core.validators import URLValidator as _URLValidator
@@ -134,8 +134,12 @@ class FKOrURLField(fields.CharField):
             return url_value
         return super().get_attribute(instance)
 
-    def run_validation(self, *args, **kwargs) -> models.Model:
+    def run_validation(self, *args, **kwargs) -> Union[models.Model, None]:
         url = super().run_validation(*args, **kwargs)
+
+        if url is None:
+            # see rest_framework.fields.Field.validate_empty_values
+            return None
 
         host = self.context["request"].get_host()
         resolver = self.context["resolver"]

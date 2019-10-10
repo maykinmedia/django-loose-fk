@@ -36,7 +36,6 @@ class FkOrURLField(models.Field):
     column = None
 
     many_to_many = None
-    null = False
     default = models.NOT_PROVIDED
     db_index = False
     db_column = None
@@ -82,6 +81,11 @@ class FkOrURLField(models.Field):
         """
         Create the DB constraints and add them if they're not present yet.
         """
+        # if the field can be null/empty, we don't need the constraint to
+        # guarantee that exactly one of both fields is filled.
+        if self.null:
+            return
+
         # URL field is empty if empty string or None
         empty_url_field = models.Q(**{self.url_field: ""})
         empty_fk_field = models.Q(**{f"{self.fk_field}__isnull": True})
@@ -170,7 +174,12 @@ class FkOrURLField(models.Field):
 
     def deconstruct(self):
         path = "%s.%s" % (self.__class__.__module__, self.__class__.__qualname__)
-        keywords = {"fk_field": self.fk_field, "url_field": self.url_field}
+        keywords = {
+            "fk_field": self.fk_field,
+            "url_field": self.url_field,
+            "blank": self.blank,
+            "null": self.null,
+        }
         return (self.name, path, [], keywords)
 
     @property
@@ -206,18 +215,26 @@ class FkOrURLDescriptor:
 
         url_value = getattr(instance, self.url_field_name)
         if not url_value:
-            raise ValueError("No FK value and no URL value, this is not allowed!")
+            if not self.null:
+                raise ValueError("No FK value and no URL value, this is not allowed!")
+            return None
 
         remote_model = self.field._fk_field.related_model
         remote_loader = self.field.loader
         return remote_loader.load(url=url_value, model=remote_model)
 
-    def __set__(self, instance: models.Model, value: InstanceOrUrl):
+    def __set__(self, instance: models.Model, value: Optional[InstanceOrUrl]):
         """
         Set the related instance through the forward relation.
 
         Delegate the set action to the appropriate field.
         """
+        if value is None and not self.field.null:
+            raise ValueError(
+                "A 'None'-value is not allowed. Make the field "
+                "nullable if empty values should be supported."
+            )
+
         if isinstance(value, ProxyMixin):
             value = value._loose_fk_data["url"]
 
@@ -225,6 +242,10 @@ class FkOrURLDescriptor:
             field_name = self.fk_field_name
         elif isinstance(value, str):
             field_name = self.url_field_name
+        elif value is None:
+            setattr(instance, self.url_field_name, "")
+            setattr(instance, self.fk_field_name, None)
+            return
         else:
             raise TypeError(f"value is of type {type(value)}, which is not supported.")
         setattr(instance, field_name, value)
