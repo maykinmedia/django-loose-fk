@@ -25,6 +25,8 @@ class FkOrURLField(models.Field):
 
     name = None
 
+    _unique = False  # TODO: support this
+
     # attributes that django.db.models.fields.Field normally sets
     creation_counter = 0
 
