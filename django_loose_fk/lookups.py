@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Tuple
 
 from django.core.exceptions import EmptyResultSet
 from django.db import models
 from django.db.models.fields.related_lookups import RelatedIn
-from django.db.models.lookups import In as _In
+from django.db.models.lookups import Exact as _Exact, In as _In
 
 from .fields import FkOrURLField
 from .virtual_models import ProxyMixin
@@ -21,18 +21,10 @@ def get_normalized_value(value) -> tuple:
     return value
 
 
-@FkOrURLField.register_lookup
-class In(RelatedIn):
-    """
-    Split the IN query into two IN queries, per datatype.
-
-    Creates an IN query for the url field values, and an IN query for the FK
-    field values, joined together by an OR.
-    """
-
-    lookup_name = "in"
-
-    def process_lhs(self, compiler, connection, lhs=None):
+class FkOrURLFieldMixin:
+    def _split_lhs(
+        self, compiler, connection, lhs=None
+    ) -> Tuple[str, tuple, str, tuple]:
         target = self.lhs.target
         db_table = target.model._meta.db_table
 
@@ -43,6 +35,46 @@ class In(RelatedIn):
         fk_lhs_sql, fk_params = super().process_lhs(compiler, connection, lhs=fk_lhs)
 
         return (url_lhs_sql, url_params, fk_lhs_sql, fk_params)
+
+
+@FkOrURLField.register_lookup
+class Exact(FkOrURLFieldMixin, _Exact):
+    """
+    Determine which underlying field to use for the exact lookup.
+
+    The RHS is either a remote or local FK, which can be mapped directly.
+    """
+
+    def get_prep_lookup(self):
+        if self.rhs_is_direct_value():
+            self.rhs = get_normalized_value(self.rhs)[0]
+        return super().get_prep_lookup()
+
+    def process_lhs(self, compiler, connection, lhs=None):
+        (url_lhs_sql, url_params, fk_lhs_sql, fk_params) = self._split_lhs(
+            compiler, connection, lhs=lhs
+        )
+
+        if isinstance(self.rhs, str):
+            # dealing with a remote URL
+            return (url_lhs_sql, url_params)
+        else:
+            return (fk_lhs_sql, fk_params)
+
+
+@FkOrURLField.register_lookup
+class In(FkOrURLFieldMixin, RelatedIn):
+    """
+    Split the IN query into two IN queries, per datatype.
+
+    Creates an IN query for the url field values, and an IN query for the FK
+    field values, joined together by an OR.
+    """
+
+    lookup_name = "in"
+
+    def process_lhs(self, compiler, connection, lhs=None):
+        return self._split_lhs(compiler, connection, lhs=lhs)
 
     def process_remote_rhs(self) -> List[str]:
         """
