@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Tuple, Union
 from urllib.parse import ParseResult, urlparse
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import URLValidator as _URLValidator
 from django.db import models
 from django.db.models.base import ModelBase
@@ -66,6 +67,9 @@ class FKOrURLValidator:
         "This *may* be because you have insufficient read permissions."
     )
 
+    def __init__(self, code=None):
+        self.code = code or "bad-url"
+
     def set_context(self, serializer_field):
         model, field = serializer_field._get_model_and_field()
         self.resolver = Resolver(model, field)
@@ -76,6 +80,12 @@ class FKOrURLValidator:
         assert isinstance(
             url, str
         ), "You must use HyperlinkedRelatedField for the local FKs"
+
+        url_validator = URLValidator()
+        try:
+            url_validator(url)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message, code=self.code)
 
         try:
             self.resolver.resolve(self.host, url)
@@ -111,10 +121,7 @@ class FKOrURLField(fields.CharField):
         self.lookup_field = kwargs.pop("lookup_field", None)
         super().__init__(*args, **kwargs)
 
-        self.validators += [
-            URLValidator(message=self.error_messages["invalid"]),
-            FKOrURLValidator(),
-        ]
+        self.validators += [FKOrURLValidator()]
 
     def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
         model_class = self.parent.Meta.model
