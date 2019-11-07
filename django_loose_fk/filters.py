@@ -37,6 +37,10 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
     def __init__(self, *args, **kwargs):
         self.queryset = kwargs.pop("queryset")
+
+        # Specified path of attributes that must be traversed to retrieve the
+        # desired object
+        self.instance_path = kwargs.pop("instance_path", None)
         super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
@@ -53,6 +57,9 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
         if local:
             local_object = get_resource_for_path(parsed.path)
+            if self.instance_path:
+                for bit in self.instance_path.split("."):
+                    local_object = getattr(local_object, bit)
             filters = {f"{model_field.fk_field}__{self.lookup_expr}": local_object}
         else:
             filters = {f"{model_field.url_field}__{self.lookup_expr}": value}
