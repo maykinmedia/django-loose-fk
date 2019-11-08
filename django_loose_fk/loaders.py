@@ -1,3 +1,4 @@
+import json
 from typing import Type
 
 from django.conf import settings
@@ -13,6 +14,10 @@ SETTING = "DEFAULT_LOOSE_FK_LOADER"
 
 
 class FetchError(Exception):
+    pass
+
+
+class FetchJsonError(Exception):
     pass
 
 
@@ -37,7 +42,13 @@ class RequestsLoader(BaseLoader):
             response.raise_for_status()
         except requests.HTTPError as exc:
             raise FetchError(exc.args[0]) from exc
-        return response.json()
+
+        try:
+            data = response.json()
+        except json.JSONDecodeError as exc:
+            raise FetchJsonError(exc.args[0]) from exc
+
+        return data
 
 
 def get_loader_class() -> Type[BaseLoader]:
