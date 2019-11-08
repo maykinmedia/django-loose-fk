@@ -19,7 +19,7 @@ from rest_framework import fields, serializers
 from rest_framework.utils.model_meta import get_field_info
 
 from .fields import FkOrURLField, InstanceOrUrl
-from .loaders import FetchError
+from .loaders import FetchError, FetchJsonError
 from .utils import get_resource_for_path
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,16 @@ class FKOrURLValidator:
             logger.info("Could not fetch %s: %r", url, exc, exc_info=exc)
             raise serializers.ValidationError(
                 self.message.format(url=url), code="bad-url"
+            )
+        except FetchJsonError as exc:
+            logger.info(
+                "URL %s doesn't seem to point to a JSON endpoint: %r",
+                url,
+                exc,
+                exc_info=exc,
+            )
+            raise serializers.ValidationError(
+                self.message.format(url=url), code="invalid-resource"
             )
         except (Http404, models.ObjectDoesNotExist):  # local resolution fails
             logger.info("Local lookup for %s didn't resolve to an object.", url)

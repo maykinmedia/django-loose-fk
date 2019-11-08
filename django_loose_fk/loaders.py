@@ -16,6 +16,10 @@ class FetchError(Exception):
     pass
 
 
+class FetchJsonError(Exception):
+    pass
+
+
 class BaseLoader:
     @staticmethod
     def fetch_object(url: str):
