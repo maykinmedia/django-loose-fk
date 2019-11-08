@@ -2,7 +2,7 @@ import pytest
 import requests_mock
 from testapp.models import Zaak, ZaakType
 
-from django_loose_fk.loaders import FetchError, default_loader, FetchJsonError
+from django_loose_fk.loaders import FetchError, FetchJsonError, default_loader
 
 
 @pytest.mark.django_db
