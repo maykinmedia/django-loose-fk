@@ -2,7 +2,7 @@ import pytest
 import requests_mock
 from testapp.models import Zaak, ZaakType
 
-from django_loose_fk.loaders import FetchError, default_loader
+from django_loose_fk.loaders import FetchError, default_loader, FetchJsonError
 
 
 @pytest.mark.django_db
@@ -21,3 +21,11 @@ def test_failed_fetch(status_code):
 
         with pytest.raises(FetchError):
             default_loader.load("https://example.com/dummy", ZaakType)
+
+
+def test_failed_not_json():
+    with requests_mock.Mocker() as m:
+        m.get("https://example.com", text="some text")
+
+        with pytest.raises(FetchJsonError):
+            default_loader.load("https://example.com", ZaakType)
