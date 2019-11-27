@@ -16,7 +16,6 @@ class ZaakType(models.Model):
 
 class Zaak(models.Model):
     name = models.CharField("name", max_length=50)
-
     _zaaktype = models.ForeignKey(
         "ZaakType", null=True, blank=True, on_delete=models.PROTECT
     )
@@ -29,6 +28,15 @@ class Zaak(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ZaakObject(models.Model):
+    name = models.CharField("name", max_length=50)
+    _zaak = models.ForeignKey(
+        "Zaak", null=True, blank=True, on_delete=models.PROTECT
+    )
+    extern_zaak = models.URLField(blank=True)
+    zaak = FkOrURLField(fk_field="_zaak", url_field="extern_zaak")
 
 
 class DummyModel(models.Model):

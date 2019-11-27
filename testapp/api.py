@@ -2,7 +2,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from django_filters.rest_framework.filterset import FilterSet
 from rest_framework import routers, serializers, viewsets
 
-from .models import Zaak, ZaakType
+from .models import Zaak, ZaakType, ZaakObject
 
 # Serializers
 
@@ -18,6 +18,11 @@ class ZaakSerializer(serializers.HyperlinkedModelSerializer):
         model = Zaak
         fields = ("url", "zaaktype", "name")
 
+
+class ZaakObjectSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ZaakObject
+        fields = ("url", "zaak", "name")
 
 # Filters
 
@@ -48,8 +53,13 @@ class ZaakViewSet(NoAuthMixin, viewsets.ModelViewSet):
     filterset_class = ZaakFilterSet
 
 
+class ZaakObjectViewSet(NoAuthMixin, viewsets.ModelViewSet):
+    queryset = ZaakObject.objects.all()
+    serializer_class = ZaakObjectSerializer
+
 # URL routing
 
 router = routers.DefaultRouter()
 router.register("zaaktypes", ZaakTypeViewSet)
 router.register("zaken", ZaakViewSet)
+router.register("zaakobjecten", ZaakObjectViewSet)
