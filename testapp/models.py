@@ -32,9 +32,7 @@ class Zaak(models.Model):
 
 class ZaakObject(models.Model):
     name = models.CharField("name", max_length=50)
-    _zaak = models.ForeignKey(
-        "Zaak", null=True, blank=True, on_delete=models.PROTECT
-    )
+    _zaak = models.ForeignKey("Zaak", null=True, blank=True, on_delete=models.PROTECT)
     extern_zaak = models.URLField(blank=True)
     zaak = FkOrURLField(fk_field="_zaak", url_field="extern_zaak")
 
