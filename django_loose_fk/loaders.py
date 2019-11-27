@@ -1,5 +1,6 @@
 import json
 from typing import Type
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.signals import setting_changed
@@ -8,6 +9,7 @@ from django.db.models.base import ModelBase
 from django.utils.functional import LazyObject, empty
 from django.utils.module_loading import import_string
 
+from .utils import get_resource_for_path
 from .virtual_models import get_model_instance
 
 SETTING = "DEFAULT_LOOSE_FK_LOADER"
@@ -26,7 +28,17 @@ class BaseLoader:
     def fetch_object(url: str):
         raise NotImplementedError  # noqa
 
+    def is_local_url(self, url) -> bool:
+        return url.startswith("http://testserver")
+
+    def load_local_object(self, url: str, model: ModelBase) -> models.Model:
+        parsed = urlparse(url)
+        return get_resource_for_path(parsed.path)
+
     def load(self, url: str, model: ModelBase) -> models.Model:
+        if self.is_local_url(url):
+            return self.load_local_object(url, model)
+
         # TODO: use a serializer layer in between
         data = self.fetch_object(url)
         return get_model_instance(model, data, loader=self)
