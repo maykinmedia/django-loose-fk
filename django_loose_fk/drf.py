@@ -182,6 +182,7 @@ class FKOrURLField(fields.CharField):
                 field_kwargs, extra_field_kwargs
             )
             field_kwargs.pop("max_length", None)
+            field_kwargs.pop("min_length", None)
             _field = field_class(**field_kwargs)
             _field.parent = self.parent
             return _field.to_representation(value)
