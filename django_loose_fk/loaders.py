@@ -49,7 +49,7 @@ class BaseLoader:
 
         if any(pattern == "*" for pattern in allowed_hosts):
             warnings.warn(
-                "You have wildcards in your ALLOWED_HOSTS settings - "
+                "You have wildcards in your ALLOWED_HOSTS setting - "
                 "this will cause all remote URLs to be considered local URLs and "
                 "break django-loose-fk's behaviour. You should use an explicit list.",
                 RuntimeWarning,

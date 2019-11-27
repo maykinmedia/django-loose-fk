@@ -14,6 +14,7 @@ class DjangoLooseFkConfig(AppConfig):
     name = "django_loose_fk"
 
     def ready(self) -> None:
+        from . import checks  # noqa
         from . import lookups  # noqa
 
         register_serializer_field()
