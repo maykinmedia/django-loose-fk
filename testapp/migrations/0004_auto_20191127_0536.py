@@ -8,9 +8,7 @@ import django_loose_fk.fields
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("testapp", "0003_auto_20190808_1647"),
-    ]
+    dependencies = [("testapp", "0003_auto_20190808_1647")]
 
     operations = [
         migrations.CreateModel(

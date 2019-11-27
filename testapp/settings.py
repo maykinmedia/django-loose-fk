@@ -50,4 +50,4 @@ TEMPLATES = [
 
 ROOT_URLCONF = "testapp.urls"
 
-ALLOWED_HOSTS = ["example.com", "testserver.com"]
+ALLOWED_HOSTS = ["testserver.com"]

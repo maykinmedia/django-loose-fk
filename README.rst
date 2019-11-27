@@ -46,6 +46,11 @@ Install
 
     pip install django-loose-fk
 
+.. warning::
+
+    You must also make sure ``ALLOWED_HOSTS`` is a list of actual domains, and not
+    a wildcard. When loose-fk gets a URL to load, it first looks up if the domain
+    is a local domain and if so, will load the actual local database record.
 
 Usage
 =====

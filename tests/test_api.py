@@ -107,8 +107,10 @@ def test_filter_zaaktype_local_fk(api_client):
     zaak_url = reverse("zaak-detail", kwargs={"pk": zaak.pk})
 
     response = api_client.get(
-        url, {"zaaktype": f"http://example.com{zaaktype_path}"}, HTTP_HOST="example.com"
+        url,
+        {"zaaktype": f"http://testserver.com{zaaktype_path}"},
+        HTTP_HOST="testserver.com",
     )
 
     assert len(response.data) == 1
-    assert response.data[0]["url"] == f"http://example.com{zaak_url}"
+    assert response.data[0]["url"] == f"http://testserver.com{zaak_url}"
