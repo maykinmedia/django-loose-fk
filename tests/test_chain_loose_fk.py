@@ -33,5 +33,4 @@ def test_get_local_fk_after_remote_url(api_client):
         assert response.status_code == 201
         zaakobject = ZaakObject.objects.get()
 
-        with pytest.raises(requests_mock.NoMockAddress):
-            zaakobject.zaak.zaaktype
+        assert zaakobject.zaak.zaaktype == zaaktype
