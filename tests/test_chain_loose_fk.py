@@ -12,9 +12,9 @@ pytestmark = pytest.mark.django_db()
 def test_get_local_fk_after_remote_url(api_client):
     zaaktype = ZaakType.objects.create(name="test")
     zaaktype_url = reverse("zaaktype-detail", kwargs={"pk": zaaktype.pk})
-    zaak_url = "https://example.com/zaaktypen/123"
+    zaak_url = "https://example.com/zaken/123"
 
-    url = reverse("zaakobject-list")
+    zaakobject = ZaakObject.objects.create(name="test", zaak=zaak_url)
 
     with requests_mock.Mocker() as m:
         m.get(
@@ -26,11 +26,5 @@ def test_get_local_fk_after_remote_url(api_client):
             },
         )
 
-        response = api_client.post(
-            url, {"name": "test", "zaak": zaak_url}, HTTP_HOST="testserver.com"
-        )
-
-        assert response.status_code == 201
-        zaakobject = ZaakObject.objects.get()
-
+        zaakobject.refresh_from_db()
         assert zaakobject.zaak.zaaktype == zaaktype
