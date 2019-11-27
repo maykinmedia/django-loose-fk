@@ -217,7 +217,7 @@ class FkOrURLDescriptor:
 
         url_value = getattr(instance, self.url_field_name)
         if not url_value:
-            if not self.null:
+            if not self.field.null:
                 raise ValueError("No FK value and no URL value, this is not allowed!")
             return None
 
