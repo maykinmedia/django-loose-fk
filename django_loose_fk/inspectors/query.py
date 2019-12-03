@@ -31,10 +31,7 @@ class FilterInspector(BaseFilterInspector):
         filter_class = filter_backend.get_filterset_class(self.view, queryset)
 
         for parameter in fields:
-            if parameter.name in filter_class.declared_filters:
-                continue
-
-            filter_field = filter_class.base_filters[parameter.name]
+            filter_field = filter_class.base_filters.get(parameter.name)
             if not isinstance(filter_field, filters.FkOrUrlFieldFilter):
                 continue
 
