@@ -52,6 +52,10 @@ class ProxyMixin:
     def __eq__(self, other):
         if isinstance(other, str):  # compare URLs
             return self._loose_fk_data["url"] == other
+
+        elif isinstance(other, ProxyMixin):
+            return self._loose_fk_data["url"] == other._loose_fk_data["url"]
+
         return super().__eq__(other)
 
     def save(self, *args, **kwargs):
