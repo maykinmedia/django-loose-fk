@@ -15,11 +15,12 @@ def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models
         field.name for field in model._meta.get_fields() if not field.auto_created
     ] + ["url"]
 
+    initial_data = data.copy()
     # only keep known fields
     data = {key: value for key, value in data.items() if key in field_names}
 
     virtual_model = virtual_model_factory(model, loader=loader)
-    return virtual_model(**data)
+    return virtual_model(initial_data=initial_data, **data)
 
 
 class VirtualModelBase(ModelBase):
@@ -45,13 +46,18 @@ class VirtualModelBase(ModelBase):
 
 
 class ProxyMixin:
-    def __init__(self, url: str, *args, **kwargs):
+    def __init__(self, url: str, initial_data: dict, *args, **kwargs):
         self._loose_fk_data = {"url": url}
+        self._initial_data = initial_data
         super().__init__(*args, **kwargs)
 
     def __eq__(self, other):
         if isinstance(other, str):  # compare URLs
             return self._loose_fk_data["url"] == other
+
+        elif isinstance(other, ProxyMixin):
+            return self._loose_fk_data["url"] == other._loose_fk_data["url"]
+
         return super().__eq__(other)
 
     def save(self, *args, **kwargs):
