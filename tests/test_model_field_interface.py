@@ -1,6 +1,8 @@
 """
 Test that it's possibly to handle remote/local objects transparently.
 """
+import uuid
+
 import pytest
 import requests_mock
 from testapp.models import B, C, TypeA, TypeB, Zaak, ZaakType
@@ -78,7 +80,11 @@ class TypeLoader(BaseLoader):
         elif url.endswith("a"):
             data.update(name="a")
         elif url.endswith("b"):
-            data.update(name="b", a_types=["https://example.com/type-a"])
+            data.update(
+                name="b",
+                a_types=["https://example.com/type-a"],
+                uuid=str(uuid.uuid4()),
+            )
         else:
             raise ValueError("Unknown URL")
 
@@ -101,3 +107,11 @@ def test_chained_remotes_fk(settings):
     c = C.objects.create(b="https://example.com/b-instance")
 
     assert c.b.type.name == "b"
+
+
+def test_remote_fk_fields_correct_type(settings):
+    settings.DEFAULT_LOOSE_FK_LOADER = "tests.test_model_field_interface.TypeLoader"
+
+    b = B.objects.create(type="https://example.com/type-b")
+
+    assert isinstance(b.type.uuid, uuid.UUID)

@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 from django_loose_fk.fields import FkOrURLField
@@ -63,6 +65,7 @@ class TypeA(models.Model):
 class TypeB(models.Model):
     name = models.CharField("name", max_length=50)
     a_types = models.ManyToManyField("TypeA", blank=True)
+    uuid = models.UUIDField(default=uuid.uuid4)
 
 
 class B(models.Model):

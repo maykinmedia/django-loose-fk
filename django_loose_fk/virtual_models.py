@@ -11,16 +11,22 @@ DictOrUrl = Union[Dict[str, Any], str]
 
 
 def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
-    field_names = [
-        field.name for field in model._meta.get_fields() if not field.auto_created
-    ] + ["url"]
+    # loop over the model fields, extract the data and convert it to the appropriate
+    # python type
+    model_data = {}
+    for field in model._meta.get_fields():
+        if field.auto_created:
+            continue
 
-    initial_data = data.copy()
-    # only keep known fields
-    data = {key: value for key, value in data.items() if key in field_names}
+        # nothing to do for this field if it's not present in the data offered
+        if field.name not in data:
+            continue
+
+        # ensure the raw input is cast to the right data type
+        model_data[field.name] = field.to_python(data[field.name])
 
     virtual_model = virtual_model_factory(model, loader=loader)
-    return virtual_model(initial_data=initial_data, **data)
+    return virtual_model(url=data.get("url"), initial_data=data, **model_data)
 
 
 class VirtualModelBase(ModelBase):
