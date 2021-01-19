@@ -13,7 +13,7 @@ from django.core.validators import URLValidator as _URLValidator
 from django.db import models
 from django.db.models.base import ModelBase
 from django.http import Http404
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from rest_framework import fields, serializers
 from rest_framework.utils.model_meta import get_field_info
@@ -183,6 +183,7 @@ class FKOrURLField(fields.CharField):
             )
             field_kwargs.pop("max_length", None)
             field_kwargs.pop("min_length", None)
+            field_kwargs.pop("allow_blank", None)
             _field = field_class(**field_kwargs)
             _field.parent = self.parent
             return _field.to_representation(value)
