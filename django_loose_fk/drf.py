@@ -154,7 +154,7 @@ class FKOrURLField(fields.CharField):
     def run_validation(self, *args, **kwargs) -> Union[models.Model, None]:
         url = super().run_validation(*args, **kwargs)
 
-        if url is None:
+        if url in [None, ""]:
             # see rest_framework.fields.Field.validate_empty_values
             return None
 
