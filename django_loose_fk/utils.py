@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.http import HttpRequest
-from django.urls import Resolver404, get_resolver
+from django.urls import Resolver404, get_resolver, get_script_prefix
 
 from rest_framework import viewsets
 from rest_framework.request import Request
@@ -37,6 +37,9 @@ def get_resource_for_path(path: str) -> models.Model:
     """
     if settings.FORCE_SCRIPT_NAME and path.startswith(settings.FORCE_SCRIPT_NAME):
         path = path[len(settings.FORCE_SCRIPT_NAME) :]
+
+    path = path.replace(get_script_prefix(), '/', 1)
+
     viewset = get_viewset_for_path(path)
 
     queryset = viewset.get_queryset()
