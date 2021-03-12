@@ -3,6 +3,7 @@ Test the ORM queries against the virtual field.
 """
 import pytest
 import requests_mock
+
 from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db

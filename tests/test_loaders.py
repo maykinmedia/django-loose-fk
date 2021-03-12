@@ -1,8 +1,8 @@
 import pytest
 import requests_mock
-from testapp.models import Zaak, ZaakType
 
 from django_loose_fk.loaders import FetchError, FetchJsonError, default_loader
+from testapp.models import Zaak, ZaakType
 
 
 @pytest.mark.django_db

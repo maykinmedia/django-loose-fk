@@ -3,10 +3,10 @@ from django.test import override_settings
 import pytest
 from django_filters.rest_framework.filterset import FilterSet
 from rest_framework.reverse import reverse
-from testapp.api import ZaakFilterSet, ZaakViewSet
-from testapp.models import Zaak, ZaakType
 
 from django_loose_fk.filters import FkOrUrlFieldFilter
+from testapp.api import ZaakFilterSet, ZaakViewSet
+from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db()
 

@@ -1,9 +1,9 @@
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.inspectors.field import get_basic_type_info
-from testapp.api import ZaakObjectViewSet, ZaakSerializer, ZaakViewSet
 
 from django_loose_fk.inspectors.query import FilterInspector
+from testapp.api import ZaakObjectViewSet, ZaakSerializer, ZaakViewSet
 
 
 def test_type_info():

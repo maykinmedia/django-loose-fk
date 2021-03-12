@@ -2,9 +2,11 @@
 Test the API interface to handle local/remote references.
 """
 from unittest.mock import patch
+
 import pytest
 import requests_mock
 from rest_framework.reverse import reverse
+
 from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db()
@@ -84,7 +86,7 @@ def test_write_invalid_local_url(api_client):
     assert response.data["zaaktype"][0].code == "does_not_exist"
 
 
-@patch('django_loose_fk.utils.get_script_prefix', return_value='/subpath/')
+@patch("django_loose_fk.utils.get_script_prefix", return_value="/subpath/")
 def test_write_local_url_with_subpath(mock, api_client):
     url = reverse("zaak-list")
     zaaktype = ZaakType.objects.create(name="test")

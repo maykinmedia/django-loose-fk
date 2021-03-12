@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="typeb", name="uuid", field=models.UUIDField(default=uuid.uuid4),
+            model_name="typeb",
+            name="uuid",
+            field=models.UUIDField(default=uuid.uuid4),
         ),
     ]

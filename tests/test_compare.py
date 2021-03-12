@@ -3,6 +3,7 @@ Test the API interface to handle comparing of loose-fk urls
 """
 import pytest
 import requests_mock
+
 from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db()

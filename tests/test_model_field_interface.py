@@ -5,9 +5,9 @@ import uuid
 
 import pytest
 import requests_mock
-from testapp.models import B, C, TypeA, TypeB, Zaak, ZaakType
 
 from django_loose_fk.loaders import BaseLoader
+from testapp.models import B, C, TypeA, TypeB, Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db
 
