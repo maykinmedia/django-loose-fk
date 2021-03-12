@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 import requests_mock
 from rest_framework.reverse import reverse
+
 from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db()

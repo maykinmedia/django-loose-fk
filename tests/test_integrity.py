@@ -1,6 +1,7 @@
 from django.db.utils import IntegrityError
 
 import pytest
+
 from testapp.models import Zaak, ZaakType
 
 pytestmark = pytest.mark.django_db
