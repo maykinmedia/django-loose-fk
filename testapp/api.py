@@ -37,6 +37,7 @@ class ZaakFilterSet(FilterSet):
             "zaaktype": ["exact", "in"],
         }
 
+
 class ZaakObjectFilterset(FilterSet):
     zaak = FkOrUrlFieldFilter(queryset=ZaakObject.objects.all())
 

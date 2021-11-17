@@ -68,12 +68,22 @@ def test_fk_or_url_field_filter_with_list(api_client):
     url = reverse("zaak-list")
 
     response = api_client.get(
-        url, {"zaaktype__in": f"{zaaktype1_url},{zaaktype2_url}"}, HTTP_HOST="testserver.com"
+        url,
+        {"zaaktype__in": f"{zaaktype1_url},{zaaktype2_url}"},
+        HTTP_HOST="testserver.com",
     )
 
     ZaakViewSet.filterset_class = ZaakFilterSet
 
     assert response.status_code == 200
     assert len(response.data) == 2
-    assert {"url": zaak1_url, "zaaktype": zaaktype1_url, "name": "bla1"} in response.data
-    assert {"url": zaak2_url, "zaaktype": zaaktype2_url, "name": "bla2"} in response.data
+    assert {
+        "url": zaak1_url,
+        "zaaktype": zaaktype1_url,
+        "name": "bla1",
+    } in response.data
+    assert {
+        "url": zaak2_url,
+        "zaaktype": zaaktype2_url,
+        "name": "bla2",
+    } in response.data

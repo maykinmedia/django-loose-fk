@@ -4,8 +4,9 @@ Filter support for django-filter.
 import logging
 from functools import reduce
 from urllib.parse import urlparse
-from django.db.models import Q
+
 from django import forms
+from django.db.models import Q
 
 import django_filters
 from django_filters.filterset import FilterSet, remote_queryset as _remote_queryset
@@ -60,7 +61,9 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
         # In case the query contained both local and remote zaaktypen, then the filters dict will be
         # {'_zaaktype__in': ['url'], 'externe_zaaktype__in': ['url']}. These filters need to be OR'd
-        args = reduce(lambda total, q_expression: Q(total) | Q(q_expression), filters.items())
+        args = reduce(
+            lambda total, q_expression: Q(total) | Q(q_expression), filters.items()
+        )
         qs = self.get_method(qs)(args)
         return qs.distinct() if self.distinct else qs
 
@@ -91,4 +94,3 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
                 filters[filter_key] = filter_value
 
         return filters
-

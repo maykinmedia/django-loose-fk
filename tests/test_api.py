@@ -2,6 +2,7 @@
 Test the API interface to handle local/remote references.
 """
 from unittest.mock import patch
+
 from django.test import override_settings
 
 import pytest
@@ -123,16 +124,23 @@ def test_filter_multiple_zaaktypes_remote_url(api_client):
     )
     zaak1_path = reverse("zaak-detail", kwargs={"pk": zaak.pk})
     zaak1_url = f"http://testserver{zaak1_path}"
-    zaak2 = Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/456")
+    zaak2 = Zaak.objects.create(
+        name="test", zaaktype="https://example.com/zaaktypen/456"
+    )
     zaak2_path = reverse("zaak-detail", kwargs={"pk": zaak2.pk})
     zaak2_url = f"http://testserver{zaak2_path}"
     Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/789")
 
-    response = api_client.get(url, {"zaaktype__in": "https://example.com/zaaktypen/123,https://example.com/zaaktypen/456"})
+    response = api_client.get(
+        url,
+        {
+            "zaaktype__in": "https://example.com/zaaktypen/123,https://example.com/zaaktypen/456"
+        },
+    )
 
     assert len(response.data) == 2
-    assert (response.data[0]["url"] == zaak1_url or response.data[1]["url"] == zaak1_url)
-    assert (response.data[0]["url"] == zaak2_url or response.data[1]["url"] == zaak2_url)
+    assert response.data[0]["url"] == zaak1_url or response.data[1]["url"] == zaak1_url
+    assert response.data[0]["url"] == zaak2_url or response.data[1]["url"] == zaak2_url
 
 
 @override_settings(ALLOWED_HOSTS=["testserver.com"])
@@ -143,23 +151,27 @@ def test_filter_remote_and_local_zaaktypes(api_client):
     zaaktype_local = ZaakType.objects.create(name="test")
     zaaktype_local_path = reverse("zaaktype-detail", kwargs={"pk": zaaktype_local.pk})
     zaaktype_local_url = f"http://testserver.com{zaaktype_local_path}"
-    zaak1 = Zaak.objects.create(
-        name="test", zaaktype=zaaktype_local
-    )
+    zaak1 = Zaak.objects.create(name="test", zaaktype=zaaktype_local)
     zaak1_path = reverse("zaak-detail", kwargs={"pk": zaak1.pk})
     zaak1_url = f"http://testserver.com{zaak1_path}"
 
     # Remote zaaktype
-    zaak2 = Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/456")
+    zaak2 = Zaak.objects.create(
+        name="test", zaaktype="https://example.com/zaaktypen/456"
+    )
     zaak2_path = reverse("zaak-detail", kwargs={"pk": zaak2.pk})
     zaak2_url = f"http://testserver.com{zaak2_path}"
     Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/789")
 
-    response = api_client.get(url, {"zaaktype__in": f"{zaaktype_local_url},https://example.com/zaaktypen/456"}, HTTP_HOST="testserver.com")
+    response = api_client.get(
+        url,
+        {"zaaktype__in": f"{zaaktype_local_url},https://example.com/zaaktypen/456"},
+        HTTP_HOST="testserver.com",
+    )
 
     assert len(response.data) == 2
-    assert (response.data[0]["url"] == zaak1_url or response.data[1]["url"] == zaak1_url)
-    assert (response.data[0]["url"] == zaak2_url or response.data[1]["url"] == zaak2_url)
+    assert response.data[0]["url"] == zaak1_url or response.data[1]["url"] == zaak1_url
+    assert response.data[0]["url"] == zaak2_url or response.data[1]["url"] == zaak2_url
 
 
 def test_filter_zaaktype_local_fk(api_client):
