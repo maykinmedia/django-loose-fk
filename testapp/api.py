@@ -33,8 +33,9 @@ class ZaakObjectSerializer(serializers.HyperlinkedModelSerializer):
 class ZaakFilterSet(FilterSet):
     class Meta:
         model = Zaak
-        fields = ("zaaktype",)
-
+        fields = {
+            "zaaktype": ["exact", "in"],
+        }
 
 class ZaakObjectFilterset(FilterSet):
     zaak = FkOrUrlFieldFilter(queryset=ZaakObject.objects.all())
