@@ -2,8 +2,9 @@
 Filter support for django-filter.
 """
 import logging
+from functools import reduce
 from urllib.parse import urlparse
-
+from django.db.models import Q
 from django import forms
 
 import django_filters
@@ -47,22 +48,47 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         if not value:
             return qs
 
-        parsed = urlparse(value)
+        values = value
+        if not isinstance(values, list):
+            values = [values]
+
+        parsed_values = [urlparse(value) for value in values]
         host = self.parent.request.get_host()
-
-        local = parsed.netloc == host
-
-        # introspect field to build filter
         model_field = self.model._meta.get_field(self.field_name)
 
-        if local:
-            local_object = get_resource_for_path(parsed.path)
-            if self.instance_path:
-                for bit in self.instance_path.split("."):
-                    local_object = getattr(local_object, bit)
-            filters = {f"{model_field.fk_field}__{self.lookup_expr}": local_object}
-        else:
-            filters = {f"{model_field.url_field}__{self.lookup_expr}": value}
+        filters = self.get_filters(model_field, parsed_values, host)
 
-        qs = self.get_method(qs)(**filters)
+        # In case the query contained both local and remote zaaktypen, then the filters dict will be
+        # {'_zaaktype__in': ['url'], 'externe_zaaktype__in': ['url']}. These filters need to be OR'd
+        args = reduce(lambda total, q_expression: Q(total) | Q(q_expression), filters.items())
+        qs = self.get_method(qs)(args)
         return qs.distinct() if self.distinct else qs
+
+    def get_filters(self, model_field, parsed_values, host) -> dict:
+        local_filter_key = f"{model_field.fk_field}__{self.lookup_expr}"
+        external_filter_key = f"{model_field.url_field}__{self.lookup_expr}"
+
+        filters = {}
+        for value in parsed_values:
+            local = value.netloc == host
+            if local:
+                local_object = get_resource_for_path(value.path)
+                if self.instance_path:
+                    for bit in self.instance_path.split("."):
+                        local_object = getattr(local_object, bit)
+                filter_key = local_filter_key
+                filter_value = local_object
+            else:
+                filter_key = external_filter_key
+                filter_value = value.geturl()
+
+            if self.lookup_expr == "in":
+                if filter_key in filters:
+                    filters[filter_key] += [filter_value]
+                else:
+                    filters[filter_key] = [filter_value]
+            elif self.lookup_expr == "exact":
+                filters[filter_key] = filter_value
+
+        return filters
+
