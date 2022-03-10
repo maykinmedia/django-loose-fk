@@ -39,6 +39,12 @@ class ZaakObject(models.Model):
     zaak = FkOrURLField(fk_field="_zaak", url_field="extern_zaak")
 
 
+class ZaakObject2(models.Model):
+    _zaak = models.ForeignKey("Zaak", null=True, blank=True, on_delete=models.PROTECT)
+    extern_zaak = models.URLField(blank=True)
+    zaak = FkOrURLField(fk_field="_zaak", url_field="extern_zaak")
+
+
 class DummyModel(models.Model):
     _zaaktype1 = models.ForeignKey(
         "ZaakType", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
