@@ -7,12 +7,19 @@ class FkOrURLFieldConstraint(BaseConstraint):
     Wrap around models.CheckConstraint based on the field name passed in.
     """
 
-    _check_name = "{fk_field}_or_{url_field}_filled"
+    _check_name = "{prefix}{fk_field}_or_{url_field}_filled"
 
-    def __init__(self, fk_field: str, url_field: str):
+    def __init__(
+        self, fk_field: str, url_field: str, app_label: str = "", model_name: str = ""
+    ):
+        self.app_label = app_label
+        self.model_name = model_name
         self.fk_field = fk_field
         self.url_field = url_field
-        name = self._check_name.format(fk_field=fk_field, url_field=url_field)
+        prefix = f"{app_label}_{model_name}_" if app_label and model_name else ""
+        name = self._check_name.format(
+            fk_field=fk_field, url_field=url_field, prefix=prefix
+        )
         super().__init__(name)
 
     def deconstruct(self):
@@ -20,6 +27,8 @@ class FkOrURLFieldConstraint(BaseConstraint):
         del kwargs["name"]
         kwargs.update(
             {
+                "app_label": self.app_label,
+                "model_name": self.model_name,
                 "fk_field": self.fk_field,
                 "url_field": self.url_field,
             }

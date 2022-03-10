@@ -95,7 +95,10 @@ class FkOrURLField(models.Field):
             return
 
         constraint = FkOrURLFieldConstraint(
-            fk_field=self.fk_field, url_field=self.url_field
+            fk_field=self.fk_field,
+            url_field=self.url_field,
+            app_label=options.app_label,
+            model_name=options.model_name,
         )
         options.constraints.append(constraint)
         # ensure this can be picked up by migrations by making it "explicitly defined"
