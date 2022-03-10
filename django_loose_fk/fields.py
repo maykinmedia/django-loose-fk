@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 from django.core import checks
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import Field
 from django.db.models.base import ModelBase, Options
@@ -87,6 +88,14 @@ class FkOrURLField(models.Field):
         # guarantee that exactly one of both fields is filled.
         if self.null:
             return
+
+        # during migrations, the FK fields are added later, causing the constraint SQL
+        # building to blow up. We can ignore this at that time.
+        if self.model.__module__ == "__fake__":
+            try:
+                options.get_field(self.fk_field)
+            except FieldDoesNotExist:
+                return
 
         # URL field is empty if empty string or None
         empty_url_field = models.Q(**{self.url_field: ""})
