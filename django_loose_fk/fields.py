@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Field
 from django.db.models.base import ModelBase, Options
 
+from .constraints import FkOrURLFieldConstraint
 from .loaders import BaseLoader, default_loader
 from .virtual_models import ProxyMixin
 
@@ -88,30 +89,22 @@ class FkOrURLField(models.Field):
         if self.null:
             return
 
-        # URL field is empty if empty string or None
-        empty_url_field = models.Q(**{self.url_field: ""})
-        empty_fk_field = models.Q(**{f"{self.fk_field}__isnull": True})
-
-        fk_filled = ~empty_fk_field & empty_url_field
-        url_filled = empty_fk_field & ~empty_url_field
-
-        # one of both MUST be filled and they cannot be filled both at the
-        # same time
-        check = fk_filled | url_filled
-
-        # check if the same constraint already exists or not - if it does, we
-        # don't need to add it
-        if any(
-            (
-                constraint.check == check
-                for constraint in options.constraints
-                if hasattr(constraint, "check")
-            )
-        ):
+        # during migrations, the FK fields are added later, causing the constraint SQL
+        # building to blow up. We can ignore this at that time.
+        if self.model.__module__ == "__fake__":
             return
 
-        name = name.format(fk_field=self.fk_field, url_field=self.url_field)
-        options.constraints.append(models.CheckConstraint(check=check, name=name))
+        constraint = FkOrURLFieldConstraint(
+            fk_field=self.fk_field,
+            url_field=self.url_field,
+            app_label=options.app_label,
+            model_name=options.model_name,
+        )
+        options.constraints.append(constraint)
+        # ensure this can be picked up by migrations by making it "explicitly defined"
+        if "constraints" not in options.original_attrs:
+            options.original_attrs["constraints"] = options.constraints
+        return
 
     @property
     def _fk_field(self) -> models.ForeignKey:

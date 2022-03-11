@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ['3.7', '3.8', '3.9']
-        django: ['2.2', '3.0', '3.1']
+        python: ['3.7', '3.8', '3.9', '3.10']
+        django: ['2.2', '3.2']
         db: ['postgres', 'sqlite']
 
     name: Run the test suite (Python ${{ matrix.python }}, Django ${{ matrix.django }}, ${{ matrix.db }})
@@ -32,8 +32,8 @@ jobs:
 
       - name: Run tests
         run: |
-          tox
           export TOXENV=py${PYTHON_VERSION/./}-django${DJANGO/./}
+          tox
           codecov -e TOXENV,DJANGO --file reports/coverage-${TOXENV}.xml
         env:
           PYTHON_VERSION: ${{ matrix.python }}
