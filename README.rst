@@ -5,9 +5,8 @@ Django Loose FK
 :Version: 1.0.0
 :Source: https://github.com/maykinmedia/django-loose-fk
 :Keywords: ``ForeignKey``, ``URL reference``, ``decentralization``, ``integrity``
-:PythonVersion: 3.7
 
-|build-status| |requirements| |coverage|
+|build-status| |code-quality| |black| |coverage|
 
 |python-versions| |django-versions| |pypi-version|
 
@@ -25,6 +24,7 @@ Features
 ========
 
 * Always work with Django model instances
+* Automatically added check constraints
 * Pluggable interface to fetch remote objects
 * Automatically supports DRF Hyperlinked serializers and serializer fields
 
@@ -36,7 +36,7 @@ Requirements
 
 * Python 3.7 or above
 * setuptools 30.3.0 or above
-* Django 2.0 or newer
+* Django 2.2 or newer
 
 
 Install
@@ -49,7 +49,7 @@ Install
 .. warning::
 
     You must also make sure ``ALLOWED_HOSTS`` is a list of actual domains, and not
-    a wildcard. When loose-fk gets a URL to load, it first looks up if the domain
+    a wildcard. When loose-fk gets a URL to load, it first looks up if the domain
     is a local domain and if so, will load the actual local database record.
 
 Usage
@@ -126,15 +126,18 @@ or override the loader on a per-field basis:
         )
 
 
+.. |build-status| image:: https://github.com/maykinmedia/django-loose-fk/workflows/Run%20CI/badge.svg
+    :alt: Build status
+    :target: https://github.com/maykinmedia/django-loose-fk/actions?query=workflow%3A%22Run+CI%22
 
-.. |build-status| image:: https://travis-ci.org/maykinmedia/django-loose-fk.svg?branch=develop
-    :target: https://travis-ci.org/maykinmedia/django-loose-fk
+.. |code-quality| image:: https://github.com/maykinmedia/django-loose-fk/workflows/Code%20quality%20checks/badge.svg
+     :alt: Code quality checks
+     :target: https://github.com/maykinmedia/django-loose-fk/actions?query=workflow%3A%22Code+quality+checks%22
 
-.. |requirements| image:: https://requires.io/github/maykinmedia/django-loose-fk/requirements.svg?branch=develop
-    :target: https://requires.io/github/maykinmedia/django-loose-fk/requirements/?branch=develop
-    :alt: Requirements status
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
 
-.. |coverage| image:: https://codecov.io/gh/maykinmedia/django-loose-fk/branch/develop/graph/badge.svg
+.. |coverage| image:: https://codecov.io/gh/maykinmedia/django-loose-fk/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/maykinmedia/django-loose-fk
     :alt: Coverage status
 

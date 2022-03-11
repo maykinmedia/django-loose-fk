@@ -7,6 +7,7 @@ Changelog
 
 * Added support for Django 3.2
 * Added support for Python 3.9 and 3.10
+* Public API is now frozen
 
 Breaking changes
 ----------------
