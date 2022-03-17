@@ -115,3 +115,10 @@ def test_remote_fk_fields_correct_type(settings):
     b = B.objects.create(type="https://example.com/type-b")
 
     assert isinstance(b.type.uuid, uuid.UUID)
+
+
+def test_model_full_clean_works():
+    zt = ZaakType.objects.create(name="test")
+
+    zaak = Zaak(name="test", zaaktype=zt)
+    zaak.full_clean()
