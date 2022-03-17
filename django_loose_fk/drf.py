@@ -62,6 +62,7 @@ class FKOrURLValidator:
     Validate that the URL is a valid remote object or local FK.
     """
 
+    requires_context = True
     message = _(
         'Bad URL "{url}" - object could not be fetched. '
         "This *may* be because you have insufficient read permissions."
@@ -70,13 +71,7 @@ class FKOrURLValidator:
     def __init__(self, code=None):
         self.code = code or "bad-url"
 
-    def set_context(self, serializer_field):
-        model, field = serializer_field._get_model_and_field()
-        self.resolver = Resolver(model, field)
-        self.host = serializer_field.context["request"].get_host()
-        serializer_field.context["resolver"] = self.resolver
-
-    def __call__(self, url: str):
+    def __call__(self, url: str, serializer_field):
         assert isinstance(
             url, str
         ), "You must use HyperlinkedRelatedField for the local FKs"
@@ -87,8 +82,16 @@ class FKOrURLValidator:
         except DjangoValidationError as exc:
             raise serializers.ValidationError(exc.message, code=self.code)
 
+        model, field = serializer_field._get_model_and_field()
+        resolver = Resolver(model, field)
+        host = serializer_field.context["request"].get_host()
+        # added so that the field has access to the resolver
+        # NOTE: this might be subject to the race condition mentioned in the DRF 3.11
+        # release notes: https://www.django-rest-framework.org/community/3.11-announcement/#validator-default-context
+        serializer_field.context["resolver"] = resolver
+
         try:
-            self.resolver.resolve(self.host, url)
+            resolver.resolve(host, url)
         except FetchError as exc:  # remote resolution fails
             logger.info("Could not fetch %s: %r", url, exc, exc_info=exc)
             raise serializers.ValidationError(
