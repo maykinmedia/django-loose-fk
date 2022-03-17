@@ -48,7 +48,7 @@ class FkOrURLField(models.Field):
     unique_for_year = None
     _validators = ()
     editable = True
-    choices = ()
+    choices = None
 
     def __post_init__(self):
         self.creation_counter = Field.creation_counter
