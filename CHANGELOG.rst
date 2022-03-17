@@ -2,6 +2,15 @@
 Changelog
 =========
 
+1.0.1 (2022-03-17)
+==================
+
+Bugfix / DRF version support release
+
+* Fixed a bug in the custom field implementation on Django 3.2 when running ``Model.full_clean``
+* Fixed support for djangorestframework 3.13
+* The minimum supported DRF version is now 3.11
+
 1.0.0 (2022-03-11)
 ==================
 
