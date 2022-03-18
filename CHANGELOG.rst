@@ -2,6 +2,15 @@
 Changelog
 =========
 
+1.0.2 (2022-03-18)
+==================
+
+Bugfix release
+
+* Fixed a bug in the django-filter implementation causing crashes on
+  ``.filter(*args, **kwargs)`` calls because of tuples instead of ``models.Q`` objects
+  being passed.
+
 1.0.1 (2022-03-17)
 ==================
 
