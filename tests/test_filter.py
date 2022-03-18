@@ -87,3 +87,23 @@ def test_fk_or_url_field_filter_with_list(api_client):
         "zaaktype": zaaktype2_url,
         "name": "bla2",
     } in response.data
+
+
+@override_settings(ALLOWED_HOSTS=["testserver.com"])
+def test_filter_with_remote_url(api_client):
+    ZaakViewSet.filterset_class = ZaakFilter
+
+    Zaak.objects.create(name="test1", zaaktype="https://example.com/zt/123")
+    Zaak.objects.create(name="test2", zaaktype="https://example.com/zt/456")
+
+    response = api_client.get(
+        reverse("zaak-list"),
+        {"zaaktype": "https://example.com/zt/456"},
+        HTTP_HOST="testserver.com",
+    )
+
+    ZaakViewSet.filterset_class = ZaakFilterSet
+
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["name"] == "test2"

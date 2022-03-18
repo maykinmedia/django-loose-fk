@@ -61,10 +61,11 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
         # In case the query contained both local and remote zaaktypen, then the filters dict will be
         # {'_zaaktype__in': ['url'], 'externe_zaaktype__in': ['url']}. These filters need to be OR'd
-        args = reduce(
-            lambda total, q_expression: Q(total) | Q(q_expression), filters.items()
-        )
-        qs = self.get_method(qs)(args)
+        complex_filter = Q()
+        for lookup, value in filters.items():
+            complex_filter |= Q(**{lookup: value})
+
+        qs = self.get_method(qs)(complex_filter)
         return qs.distinct() if self.distinct else qs
 
     def get_filters(self, model_field, parsed_values, host) -> dict:
