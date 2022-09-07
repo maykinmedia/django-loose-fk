@@ -90,3 +90,20 @@ or override the loader on a per-field basis:
             url_field="remote",
             loader=RequestsLoader()
         )
+
+
+Handlers
+--------
+
+As mentioned before when ``FkOrURLField`` attribute is accesses the (virtual) model
+instance is always returned. However this instance can include relation fields such
+as ``ForeignKey`` and ``ManyToManyField``. In case of remote urls we use handlers
+to access the relation fields.
+
+You can specify a global default mapping of relation fields and handlers with the
+setting ``DEFAULT_LOOSE_FK_HANDLERS``:
+
+.. code-block:: python
+
+    DEFAULT_LOOSE_FK_HANDLERS = "django_loose_fk.virtual_models.HANDLERS"
+
