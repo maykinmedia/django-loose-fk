@@ -2,12 +2,16 @@ from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 from django.apps import apps
+from django.conf import settings
 from django.db import models
 from django.db.models.base import ModelBase
+from django.utils.module_loading import import_string
 
 from .query_list import QueryList
 
 DictOrUrl = Union[Dict[str, Any], str]
+
+SETTING = "DEFAULT_LOOSE_FK_HANDLERS"
 
 
 def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
@@ -41,7 +45,8 @@ class VirtualModelBase(ModelBase):
             if not field.is_relation:
                 continue
 
-            Handler = HANDLERS[type(field)]
+            handlers = get_handlers()
+            Handler = handlers[type(field)]
             handler = Handler(
                 field.name, loader=loader, remote_model=field.related_model
             )
@@ -126,3 +131,8 @@ class FKHandler(BaseHandler):
 
 
 HANDLERS = {models.ForeignKey: FKHandler, models.ManyToManyField: M2MHandler}
+
+
+def get_handlers() -> dict:
+    import_path = getattr(settings, SETTING, "django_loose_fk.virtual_models.HANDLERS")
+    return import_string(import_path)
