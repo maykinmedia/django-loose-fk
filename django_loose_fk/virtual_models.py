@@ -38,10 +38,10 @@ class VirtualModelBase(ModelBase):
             if field.auto_created:
                 continue
 
-            if not field.is_relation:
+            Handler = HANDLERS.get(type(field))
+            if not Handler:
                 continue
 
-            Handler = HANDLERS[type(field)]
             handler = Handler(
                 field.name, loader=loader, remote_model=field.related_model
             )
