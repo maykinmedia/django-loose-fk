@@ -10,7 +10,6 @@ import django_loose_fk.fields
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []

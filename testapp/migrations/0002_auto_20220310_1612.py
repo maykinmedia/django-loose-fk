@@ -8,7 +8,6 @@ import django_loose_fk.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("testapp", "0001_initial"),
     ]
