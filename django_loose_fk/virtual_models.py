@@ -1,13 +1,9 @@
 from functools import lru_cache
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
 from django.apps import apps
 from django.db import models
 from django.db.models.base import ModelBase
-
-from .query_list import QueryList
-
-DictOrUrl = Union[Dict[str, Any], str]
 
 
 def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models.Model:
@@ -31,6 +27,8 @@ def get_model_instance(model: ModelBase, data: Dict[str, Any], loader) -> models
 
 class VirtualModelBase(ModelBase):
     def __new__(cls, name, bases, attrs, **kwargs):
+        from .handlers import HANDLERS
+
         loader = attrs.pop("_loose_fk_loader")
         new_cls = super().__new__(cls, name, bases, attrs, **kwargs)
 
@@ -92,37 +90,3 @@ def virtual_model_factory(model: ModelBase, loader) -> VirtualModelBase:
     )
 
     return Proxy
-
-
-class BaseHandler:
-    def __init__(self, field_name: str, loader, remote_model: ModelBase):
-        self.field_name = field_name
-        self.loader = loader
-        self.remote_model = remote_model
-
-    def __set__(self, instance: models.Model, value: List[DictOrUrl]):
-        instance._loose_fk_data[self.field_name] = value
-
-
-class M2MHandler(BaseHandler):
-    def __get__(self, instance, cls=None) -> QueryList:
-        raw_data = instance._loose_fk_data.get(self.field_name, [])
-        assert all((isinstance(url, str) for url in raw_data))
-
-        loaded_data = [
-            self.loader.load(url=url, model=self.remote_model) for url in raw_data
-        ]
-
-        return QueryList(loaded_data)
-
-
-class FKHandler(BaseHandler):
-    def __get__(self, instance, cls=None) -> models.Model:
-        raw_data = instance._loose_fk_data.get(self.field_name, None)
-        if raw_data is None:
-            return None
-        assert isinstance(raw_data, str)
-        return self.loader.load(url=raw_data, model=self.remote_model)
-
-
-HANDLERS = {models.ForeignKey: FKHandler, models.ManyToManyField: M2MHandler}
