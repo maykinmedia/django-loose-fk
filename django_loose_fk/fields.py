@@ -233,6 +233,11 @@ class FkOrURLDescriptor:
         if isinstance(value, ProxyMixin):
             value = value._loose_fk_data["url"]
 
+            # for chained loose-fk models check if it's a local model instance
+            if self.field.loader.is_local_url(value):
+                remote_model = self.field._fk_field.related_model
+                value = self.field.loader.load_local_object(value, remote_model)
+
         if isinstance(value, models.Model):
             field_name = self.fk_field_name
         elif isinstance(value, str):
