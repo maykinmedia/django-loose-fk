@@ -24,8 +24,7 @@ def get_db():
 
 DATABASES = {"default": get_db()}
 
-# TODO: update to BigAutoField and makemigrations once we drop 2.2 support
-DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = ["django_loose_fk", "testapp"]
 
