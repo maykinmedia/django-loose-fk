@@ -207,10 +207,6 @@ class FkOrURLDescriptor:
             if fk_value:
                 return fk_value
 
-            url_value = instance._loose_fk_data.get(self.fk_field_name, None)
-            if url_value:
-                return url_value
-
         # if the value is select_related, this will hit that cache
         pk_value = getattr(instance, self.field._fk_field.attname)
         if pk_value is not None:
