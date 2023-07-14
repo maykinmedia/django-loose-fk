@@ -201,6 +201,12 @@ class FkOrURLDescriptor:
         if instance is None:
             return self
 
+        # for chained loose-fk fields:
+        if isinstance(instance, ProxyMixin):
+            fk_value = instance._loose_fk_data.get(self.fk_field_name, None)
+            if fk_value:
+                return fk_value
+
         # if the value is select_related, this will hit that cache
         pk_value = getattr(instance, self.field._fk_field.attname)
         if pk_value is not None:
@@ -230,6 +236,13 @@ class FkOrURLDescriptor:
                 "nullable if empty values should be supported."
             )
 
+        # for chained loose-fk models check if it's a local url
+        if isinstance(instance, ProxyMixin) and isinstance(value, str):
+            if self.field.loader.is_local_url(value):
+                remote_model = self.field._fk_field.related_model
+                value = self.field.loader.load_local_object(value, remote_model)
+
+        # if we try to set loose-fk virtual model instance - it's external url
         if isinstance(value, ProxyMixin):
             value = value._loose_fk_data["url"]
 
