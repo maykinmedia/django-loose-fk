@@ -2,6 +2,14 @@
 Changelog
 =========
 
+1.0.3 (2023-07-14)
+==================
+
+* Fixed a bug which can appear when there is a chain of loose-fk objects, especially
+when external object is related to the local one. In this case the local object was treated
+like an external one, now it's fixed.
+* Dropped support for Django 2.2
+
 1.0.2 (2022-03-18)
 ==================
 
