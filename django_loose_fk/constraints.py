@@ -40,7 +40,6 @@ class FkOrURLFieldConstraint(BaseConstraint):
         Return the underlying check constraint generated.
         """
         if not hasattr(self, "_check_constraint"):
-
             # URL field is empty if empty string or None
             empty_url_field = models.Q(**{self.url_field: ""})
             empty_fk_field = models.Q(**{f"{self.fk_field}__isnull": True})
