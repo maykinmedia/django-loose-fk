@@ -125,6 +125,20 @@ or override the loader on a per-field basis:
             loader=RequestsLoader()
         )
 
+Local and remote urls
+---------------------
+
+If several services are hosted within the same domain, it could be tricky to separate
+local and remote urls. In this case an additional setting ``LOOSE_FK_LOCAL_BASE_URLS``can be used
+to define an explicit list of allowed prefixes for local urls.
+
+.. code-block:: python
+
+    LOOSE_FK_LOCAL_BASE_URLS = [
+        "https://api.example.nl/ozgv-t/zaken/",
+        "https://api.example.nl/ozgv-t/catalogi/",
+    ]
+
 
 .. |build-status| image:: https://github.com/maykinmedia/django-loose-fk/workflows/Run%20CI/badge.svg
     :alt: Build status
