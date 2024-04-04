@@ -191,3 +191,44 @@ def test_filter_zaaktype_local_fk(api_client):
 
     assert len(response.data) == 1
     assert response.data[0]["url"] == f"http://testserver.com{zaak_url}"
+
+
+@patch("django_loose_fk.utils.get_script_prefix", return_value="/subpath/")
+@override_settings(
+    ALLOWED_HOSTS=["testserver.com"],
+    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"])
+def test_write_local_url_with_local_base_urls(mock, api_client):
+    url = reverse("zaak-list")
+    zaaktype = ZaakType.objects.create(name="test")
+    zaaktype_url = reverse("zaaktype-detail", kwargs={"pk": zaaktype.pk})
+
+    data = {"name": "test", "zaaktype": f"http://testserver.com/subpath{zaaktype_url}"}
+
+    response = api_client.post(url, data, HTTP_HOST="testserver.com")
+
+    assert response.status_code == 201
+    zaak = Zaak.objects.get()
+    assert zaak.zaaktype == zaaktype
+
+
+@patch("django_loose_fk.utils.get_script_prefix", return_value="/subpath/")
+@override_settings(
+    ALLOWED_HOSTS=["testserver.com"],
+    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"]
+)
+def test_write_remote_url_with_local_base_urls(mock, api_client):
+    """
+    test that service with the same host and prefix can still be external
+    """
+    url = reverse("zaak-list")
+    zaaktype_url = "http://testserver.com/subpath/service/zaaktypes/10/"
+    data = {"name": "test", "zaaktype": zaaktype_url}
+
+    with requests_mock.Mocker() as m:
+        m.get(zaaktype_url, json={"url": zaaktype_url, "name": "test"})
+
+        response = api_client.post(url, data, HTTP_HOST="testserver.com")
+
+        assert response.status_code == 201
+        zaak = Zaak.objects.get()
+        assert zaak.zaaktype == zaaktype_url
