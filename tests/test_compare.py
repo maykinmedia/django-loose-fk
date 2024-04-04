@@ -1,6 +1,7 @@
 """
 Test the API interface to handle comparing of loose-fk urls
 """
+
 import pytest
 import requests_mock
 

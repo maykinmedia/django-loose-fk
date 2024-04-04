@@ -1,6 +1,7 @@
 """
 Test the API interface to handle local/remote references.
 """
+
 from unittest.mock import patch
 
 from django.test import override_settings
@@ -196,7 +197,8 @@ def test_filter_zaaktype_local_fk(api_client):
 @patch("django_loose_fk.utils.get_script_prefix", return_value="/subpath/")
 @override_settings(
     ALLOWED_HOSTS=["testserver.com"],
-    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"])
+    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"],
+)
 def test_write_local_url_with_local_base_urls(mock, api_client):
     url = reverse("zaak-list")
     zaaktype = ZaakType.objects.create(name="test")
@@ -214,7 +216,7 @@ def test_write_local_url_with_local_base_urls(mock, api_client):
 @patch("django_loose_fk.utils.get_script_prefix", return_value="/subpath/")
 @override_settings(
     ALLOWED_HOSTS=["testserver.com"],
-    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"]
+    LOOSE_FK_LOCAL_BASE_URLS=["http://testserver.com/subpath/zaaktypes/"],
 )
 def test_write_remote_url_with_local_base_urls(mock, api_client):
     """

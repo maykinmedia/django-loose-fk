@@ -3,6 +3,7 @@ Django Rest Framework integration.
 
 Provides a custom field.
 """
+
 import logging
 from dataclasses import dataclass
 from typing import Tuple, Union

@@ -1,6 +1,7 @@
 """
 Test that it's possibly to handle remote/local objects transparently.
 """
+
 import uuid
 
 import pytest
