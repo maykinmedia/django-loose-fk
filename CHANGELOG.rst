@@ -2,6 +2,13 @@
 Changelog
 =========
 
+1.0.4 (2024-04-05)
+==================
+
+* Added setting ``LOOSE_FK_LOCAL_BASE_URLS``, which explicitly list allowed prefixes for
+local urls to fine-tune resolving local and remote urls, now they can be hosted within
+the same domain (#28).
+
 1.0.3 (2023-07-14)
 ==================
 
