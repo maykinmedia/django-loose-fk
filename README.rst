@@ -129,7 +129,7 @@ Local and remote urls
 ---------------------
 
 If several services are hosted within the same domain, it could be tricky to separate
-local and remote urls. In this case an additional setting ``LOOSE_FK_LOCAL_BASE_URLS``can be used
+local and remote urls. In this case an additional setting ``LOOSE_FK_LOCAL_BASE_URLS`` can be used
 to define an explicit list of allowed prefixes for local urls.
 
 .. code-block:: python
