@@ -1,8 +1,8 @@
 """
 Filter support for django-filter.
 """
+
 import logging
-from functools import reduce
 from urllib.parse import urlparse
 
 from django import forms
@@ -12,7 +12,7 @@ import django_filters
 from django_filters.filterset import FilterSet, remote_queryset as _remote_queryset
 
 from .fields import FkOrURLField
-from .utils import get_resource_for_path, get_subclasses
+from .utils import get_resource_for_path, get_subclasses, is_local
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
         filters = {}
         for value in parsed_values:
-            local = value.netloc == host
+            local = is_local(host, value.geturl())
             if local:
                 local_object = get_resource_for_path(value.path)
                 if self.instance_path:

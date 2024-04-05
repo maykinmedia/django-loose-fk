@@ -4,6 +4,7 @@ Define a query parameters inspector that can handle the custom fields.
 Requires drf-yasg, which can be installed as the [openapi] optional group
 dependency.
 """
+
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from drf_yasg import openapi
 

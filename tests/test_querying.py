@@ -1,6 +1,7 @@
 """
 Test the ORM queries against the virtual field.
 """
+
 import pytest
 import requests_mock
 

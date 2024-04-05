@@ -116,6 +116,14 @@ class In(FkOrURLFieldMixin, RelatedIn):
         if self.rhs_is_direct_value():
             # If we get here, we are dealing with single-column relations.
             self.rhs = [get_normalized_value(val)[0] for val in self.rhs]
+
+        else:
+            # we're dealing with something that can be expressed as SQL -> it's local only!
+            target = self.lhs.target
+            db_table = target.model._meta.db_table
+            fk_lhs = target._fk_field.get_col(db_table)
+            target_field = fk_lhs.target.target_field.name
+            self.rhs.set_values([target_field])
         return super().get_prep_lookup()
 
     def as_sql(self, compiler, connection):

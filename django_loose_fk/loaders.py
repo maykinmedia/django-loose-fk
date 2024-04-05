@@ -46,6 +46,7 @@ class BaseLoader:
         """
         allowed_hosts = settings.ALLOWED_HOSTS
         parsed = urlparse(url)
+        local_base_urls = getattr(settings, "LOOSE_FK_LOCAL_BASE_URLS", [])
 
         if any(pattern == "*" for pattern in allowed_hosts):
             warnings.warn(
@@ -54,6 +55,10 @@ class BaseLoader:
                 "break django-loose-fk's behaviour. You should use an explicit list.",
                 RuntimeWarning,
             )
+            return validate_host(parsed.netloc, allowed_hosts)
+
+        if local_base_urls:
+            return any(url.startswith(base_url) for base_url in local_base_urls)
 
         return validate_host(parsed.netloc, allowed_hosts)
 

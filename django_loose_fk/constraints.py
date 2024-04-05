@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models.constraints import BaseConstraint
+from django.db.utils import DEFAULT_DB_ALIAS
 
 
 class FkOrURLFieldConstraint(BaseConstraint):
@@ -35,7 +36,7 @@ class FkOrURLFieldConstraint(BaseConstraint):
         )
         return (path, args, kwargs)
 
-    def _get_check_constraint(self, model, schema_editor):
+    def _get_check_constraint(self, model, schema_editor=None):
         """
         Return the underlying check constraint generated.
         """
@@ -65,6 +66,10 @@ class FkOrURLFieldConstraint(BaseConstraint):
     def remove_sql(self, model, schema_editor):
         check_constraint = self._get_check_constraint(model, schema_editor)
         return check_constraint.remove_sql(model, schema_editor)
+
+    def validate(self, model, instance, exclude=None, using=DEFAULT_DB_ALIAS):
+        check_constraint = self._get_check_constraint(model)
+        return check_constraint.validate(model, instance, exclude, using)
 
     def __repr__(self):
         return "<%s: field=%r>" % (self.__class__.__name__, self.name)

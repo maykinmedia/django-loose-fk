@@ -3,6 +3,7 @@ Django Rest Framework integration.
 
 Provides a custom field.
 """
+
 import logging
 from dataclasses import dataclass
 from typing import Tuple, Union
@@ -20,7 +21,7 @@ from rest_framework.utils.model_meta import get_field_info
 
 from .fields import FkOrURLField, InstanceOrUrl
 from .loaders import FetchError, FetchJsonError
-from .utils import get_resource_for_path
+from .utils import get_resource_for_path, is_local
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class Resolver:
 
     def resolve(self, host: str, url: str) -> models.Model:
         parsed = urlparse(url)
-        is_local = parsed.netloc == host
-        return self.resolve_local(parsed) if is_local else self.resolve_remote(url)
+        local = is_local(host, url)
+        return self.resolve_local(parsed) if local else self.resolve_remote(url)
 
     def resolve_local(self, parsed: ParseResult) -> models.Model:
         return get_resource_for_path(parsed.path)
