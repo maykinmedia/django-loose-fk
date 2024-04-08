@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -7,8 +8,6 @@ from django.urls import Resolver404, get_resolver, get_script_prefix
 
 from rest_framework import viewsets
 from rest_framework.request import Request
-import logging
-
 
 logger = logging.getLogger(__name__)
 
