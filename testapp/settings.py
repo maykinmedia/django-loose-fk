@@ -53,3 +53,5 @@ TEMPLATES = [
 ROOT_URLCONF = "testapp.urls"
 
 ALLOWED_HOSTS = ["testserver.com"]
+
+USE_TZ = False
