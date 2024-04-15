@@ -34,7 +34,7 @@ Installation
 Requirements
 ------------
 
-* Python 3.7 or above
+* Python 3.10 or above
 * setuptools 30.3.0 or above
 * Django 3.2 or newer
 

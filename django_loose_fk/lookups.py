@@ -141,14 +141,14 @@ class In(FkOrURLFieldMixin, RelatedIn):
         if fk_rhs_sql:
             fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
             fk_sql = (
-                "%s %s" % (fk_lhs_sql, fk_rhs_sql),
+                "{} {}".format(fk_lhs_sql, fk_rhs_sql),
                 tuple(fk_params) + fk_rhs_params,
             )
 
         if url_rhs_sql:
             url_rhs_sql = self.get_rhs_op(connection, url_rhs_sql)
             url_sql = (
-                "%s %s" % (url_lhs_sql, url_rhs_sql),
+                "{} {}".format(url_lhs_sql, url_rhs_sql),
                 tuple(url_params) + url_rhs_params,
             )
 
@@ -159,6 +159,6 @@ class In(FkOrURLFieldMixin, RelatedIn):
             return fk_sql
 
         params = url_sql[1] + fk_sql[1]
-        sql = "(%s OR %s)" % (url_sql[0], fk_sql[0])
+        sql = "({} OR {})".format(url_sql[0], fk_sql[0])
 
         return sql, params
