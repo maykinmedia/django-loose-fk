@@ -72,7 +72,7 @@ class FkOrURLFieldConstraint(BaseConstraint):
         return check_constraint.validate(model, instance, exclude, using)
 
     def __repr__(self):
-        return "<%s: field=%r>" % (self.__class__.__name__, self.name)
+        return "<{}: field={!r}>".format(self.__class__.__name__, self.name)
 
     def __eq__(self, other):
         if isinstance(other, FkOrURLFieldConstraint):

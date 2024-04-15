@@ -168,7 +168,7 @@ class FkOrURLField(models.Field):
         return self.__class__(*args, **kwargs)
 
     def deconstruct(self):
-        path = "%s.%s" % (self.__class__.__module__, self.__class__.__qualname__)
+        path = "{}.{}".format(self.__class__.__module__, self.__class__.__qualname__)
         keywords = {
             "fk_field": self.fk_field,
             "url_field": self.url_field,

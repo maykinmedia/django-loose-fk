@@ -107,7 +107,7 @@ class BaseHandler:
 class M2MHandler(BaseHandler):
     def __get__(self, instance, cls=None) -> QueryList:
         raw_data = instance._loose_fk_data.get(self.field_name, [])
-        assert all((isinstance(url, str) for url in raw_data))
+        assert all(isinstance(url, str) for url in raw_data)
 
         loaded_data = [
             self.loader.load(url=url, model=self.remote_model) for url in raw_data
