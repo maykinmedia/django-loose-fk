@@ -70,3 +70,7 @@ def get_subclasses(cls):
     for subclass in cls.__subclasses__():
         yield from get_subclasses(subclass)
         yield subclass
+
+
+def strip_port_number_and_lowercase(netloc: str) -> str:
+    return netloc.split(":")[0].lower()
