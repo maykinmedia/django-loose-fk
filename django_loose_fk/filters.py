@@ -55,9 +55,19 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
 
         parsed_values = [urlparse(value) for value in values]
         host = self.parent.request.get_host()
-        model_field = self.model._meta.get_field(self.field_name)
 
-        filters = self.get_filters(model_field, parsed_values, host)
+        model_field_list = self.field_name.split("__")
+        model_field_path = (
+            f"{self.field_name.rsplit('__', 1)[0]}__"
+            if len(model_field_list) > 1
+            else None
+        )
+        model_field = self.model._meta.get_field(model_field_list.pop(0))
+
+        for field_name in model_field_list:
+            model_field = model_field.target_field.model._meta.get_field(field_name)
+
+        filters = self.get_filters(model_field, parsed_values, host, model_field_path)
 
         # In case the query contained both local and remote zaaktypen, then the filters dict will be
         # {'_zaaktype__in': ['url'], 'externe_zaaktype__in': ['url']}. These filters need to be OR'd
@@ -68,9 +78,15 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         qs = self.get_method(qs)(complex_filter)
         return qs.distinct() if self.distinct else qs
 
-    def get_filters(self, model_field, parsed_values, host) -> dict:
+    def get_filters(
+        self, model_field, parsed_values, host, model_field_path=None
+    ) -> dict:
         local_filter_key = f"{model_field.fk_field}__{self.lookup_expr}"
         external_filter_key = f"{model_field.url_field}__{self.lookup_expr}"
+
+        if model_field_path:
+            local_filter_key = model_field_path + local_filter_key
+            external_filter_key = model_field_path + external_filter_key
 
         filters = {}
         for value in parsed_values:

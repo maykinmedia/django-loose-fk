@@ -4,8 +4,13 @@ import pytest
 from django_filters.rest_framework.filterset import FilterSet
 from rest_framework.reverse import reverse
 
-from testapp.api import ZaakFilterSet, ZaakViewSet
-from testapp.models import Zaak, ZaakType
+from testapp.api import (
+    ZaakFilterSet,
+    ZaakObjectFkFilterset,
+    ZaakObjectFkViewSet,
+    ZaakViewSet,
+)
+from testapp.models import Zaak, ZaakObject, ZaakObjectFk, ZaakType
 
 pytestmark = pytest.mark.django_db()
 
@@ -107,3 +112,45 @@ def test_filter_with_remote_url(api_client):
     assert response.status_code == 200
     assert len(response.data) == 1
     assert response.data[0]["name"] == "test2"
+
+
+@override_settings(ALLOWED_HOSTS=["testserver.com"])
+def test_filter_with_fk_or_url_field_from_other_model(api_client):
+    zaaktype1 = ZaakType.objects.create(name=1)
+    zaak = Zaak.objects.create(name="zaak", zaaktype=zaaktype1)
+    zaak1_uri = reverse("zaak-detail", kwargs={"pk": zaak.pk})
+    zaak1_url = f"http://testserver.com{zaak1_uri}"
+
+    zaak_object1 = ZaakObject.objects.create(name="zaak object one", zaak=zaak)
+    zaak_object2 = ZaakObject.objects.create(
+        name="zaak object two", zaak="https://example.com/zt/456"
+    )
+
+    zaak_object_fk1 = ZaakObjectFk.objects.create(
+        name="zaak object fk one", zaak_object=zaak_object1
+    )
+    zaak_object_fk2 = ZaakObjectFk.objects.create(
+        name="zaak object fk two", zaak_object=zaak_object2
+    )
+
+    ZaakObjectFkViewSet.filterset_class = ZaakObjectFkFilterset
+
+    response = api_client.get(
+        reverse("zaakobjectfk-list"),
+        {"zaak": "https://example.com/zt/456"},
+        HTTP_HOST="testserver.com",
+    )
+
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["name"] == zaak_object_fk2.name
+
+    response = api_client.get(
+        reverse("zaakobjectfk-list"),
+        {"zaak": zaak1_url},
+        HTTP_HOST="testserver.com",
+    )
+
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]["name"] == zaak_object_fk1.name
