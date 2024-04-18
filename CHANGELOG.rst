@@ -2,6 +2,11 @@
 Changelog
 =========
 
+1.1.1 (2024-04-18)
+==================
+
+* Support related fields in the `FkOrUrlFieldFilter` field_name (#37)
+
 1.1.0 (2024-04-15)
 ==================
 
