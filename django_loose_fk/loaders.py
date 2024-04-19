@@ -11,7 +11,7 @@ from django.http.request import validate_host
 from django.utils.functional import LazyObject, empty
 from django.utils.module_loading import import_string
 
-from .utils import get_resource_for_path
+from .utils import get_resource_for_path, strip_port_number_and_lowercase
 from .virtual_models import get_model_instance
 
 SETTING = "DEFAULT_LOOSE_FK_LOADER"
@@ -55,12 +55,16 @@ class BaseLoader:
                 "break django-loose-fk's behaviour. You should use an explicit list.",
                 RuntimeWarning,
             )
-            return validate_host(parsed.netloc, allowed_hosts)
+            return validate_host(
+                strip_port_number_and_lowercase(parsed.netloc), allowed_hosts
+            )
 
         if local_base_urls:
             return any(url.startswith(base_url) for base_url in local_base_urls)
 
-        return validate_host(parsed.netloc, allowed_hosts)
+        return validate_host(
+            strip_port_number_and_lowercase(parsed.netloc), allowed_hosts
+        )
 
     def load_local_object(self, url: str, model: ModelBase) -> models.Model:
         parsed = urlparse(url)

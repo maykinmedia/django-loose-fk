@@ -29,3 +29,10 @@ def test_failed_not_json():
 
         with pytest.raises(FetchJsonError):
             default_loader.load("https://example.com", ZaakType)
+
+
+def test_is_local_url():
+    assert default_loader.is_local_url("https://testserver.com/some-resource")
+    assert default_loader.is_local_url("https://testserver.local:443/some-resource")
+    assert default_loader.is_local_url("https://TESTSERVER.LOCAL:443/some-resource")
+    assert not default_loader.is_local_url("https://example.com/some-resource")
