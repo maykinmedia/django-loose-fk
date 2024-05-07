@@ -55,3 +55,5 @@ ROOT_URLCONF = "testapp.urls"
 ALLOWED_HOSTS = ["testserver.com", "testserver.local"]
 
 USE_TZ = False
+
+REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}

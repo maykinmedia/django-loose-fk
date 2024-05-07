@@ -19,6 +19,7 @@ class ZaakSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Zaak
         fields = ("url", "zaaktype", "name")
+        extra_kwargs = {"zaaktype": {"max_length": 1000}}
 
 
 class ZaakObjectSerializer(serializers.HyperlinkedModelSerializer):
