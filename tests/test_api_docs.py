@@ -1,53 +1,45 @@
-from django_filters.rest_framework.backends import DjangoFilterBackend
-from drf_yasg import openapi
-from drf_yasg.inspectors.field import get_basic_type_info
-
-from django_loose_fk.inspectors.query import FilterInspector
-from testapp.api import ZaakObjectViewSet, ZaakSerializer, ZaakViewSet
+from drf_spectacular.generators import SchemaGenerator
 
 
-def test_type_info():
-    field = ZaakSerializer().fields["zaaktype"]
+def test_field_schema():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
 
-    type_info = get_basic_type_info(field)
-
-    assert type_info == {
-        "type": openapi.TYPE_STRING,
-        "format": openapi.FORMAT_URI,
-        "min_length": 1,
+    zaaktype_schema = schema["components"]["schemas"]["Zaak"]["properties"]["zaaktype"]
+    assert zaaktype_schema == {
+        "type": "string",
+        "format": "uri",
+        "maxLength": 1000,
+        "minLength": None,
     }
 
 
-def test_filter_introspection():
-    viewset = ZaakViewSet()
-    inspector = FilterInspector(viewset, "/foo", "get", [], None)
-    filter_backend = DjangoFilterBackend()
+def test_filter_schema():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
 
-    parameters = inspector.get_filter_parameters(filter_backend)
+    parameters_schema = schema["paths"]["/zaken/"]["get"]["parameters"]
 
-    assert len(parameters) == 2
+    assert len(parameters_schema) == 2
 
-    zaaktype_param = parameters[0]
-    assert zaaktype_param.name == "zaaktype"
-    assert zaaktype_param.type == openapi.TYPE_STRING
-    assert zaaktype_param.format == openapi.FORMAT_URI
+    zaaktype_param = parameters_schema[0]
+    assert zaaktype_param["name"] == "zaaktype"
+    assert zaaktype_param["schema"]["type"] == "string"
+    assert zaaktype_param["schema"]["format"] == "uri"
 
-    zaaktype_in_param = parameters[1]
-    assert zaaktype_in_param.name == "zaaktype__in"
-    assert zaaktype_in_param.type == openapi.TYPE_STRING
-    assert zaaktype_in_param.format == openapi.FORMAT_URI
+    zaaktype_in_param = parameters_schema[1]
+    assert zaaktype_in_param["name"] == "zaaktype__in"
+    assert zaaktype_in_param["schema"]["type"] == "array"
+    assert zaaktype_in_param["schema"]["items"]["type"] == "string"
+    assert zaaktype_in_param["schema"]["items"]["format"] == "uri"
 
 
-def test_declared_filter_introspection():
-    viewset = ZaakObjectViewSet()
-    inspector = FilterInspector(viewset, "/foo", "get", [], None)
-    filter_backend = DjangoFilterBackend()
+def test_declared_filter_schema():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
 
-    parameters = inspector.get_filter_parameters(filter_backend)
+    parameters_schema = schema["paths"]["/zaakobjectfk/"]["get"]["parameters"]
 
-    assert len(parameters) == 1
-    param = parameters[0]
+    assert len(parameters_schema) == 1
+    param = parameters_schema[0]
 
-    assert param.name == "zaak"
-    assert param.type == openapi.TYPE_STRING
-    assert param.format == openapi.FORMAT_URI
+    assert param["name"] == "zaak"
+    assert param["schema"]["type"] == "string"
+    assert param["schema"]["format"] == "uri"
