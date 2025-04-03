@@ -2,6 +2,12 @@
 Changelog
 =========
 
+1.1.2 (2025-04-03)
+==================
+
+* Minor optimizations to DRF fields and model fields, some properties are now cached
+  to avoid running the same code more than necessary when serializing
+
 1.1.1 (2024-04-18)
 ==================
 
