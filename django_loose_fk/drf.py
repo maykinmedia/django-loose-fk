@@ -14,6 +14,7 @@ from django.core.validators import URLValidator as _URLValidator
 from django.db import models
 from django.db.models.base import ModelBase
 from django.http import Http404
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from rest_framework import fields, serializers
@@ -137,6 +138,27 @@ class FKOrURLField(fields.CharField):
 
         self.validators += [FKOrURLValidator()]
 
+    @cached_property
+    def _field_instance(self):
+        model_class, model_field = self._get_model_and_field()
+        self.model_field = model_field
+        info = get_field_info(model_class)
+        fk_field_name = model_field.fk_field
+
+        extra_field_kwargs = self.parent.get_extra_kwargs().get(self.field_name, {})
+        field_class, field_kwargs = self.parent.build_field(
+            fk_field_name, info, model_class, 0
+        )
+        field_kwargs = self.parent.include_extra_kwargs(
+            field_kwargs, extra_field_kwargs
+        )
+        field_kwargs.pop("max_length", None)
+        field_kwargs.pop("min_length", None)
+        field_kwargs.pop("allow_blank", None)
+        _field = field_class(**field_kwargs)
+        _field.parent = self.parent
+        return _field
+
     def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
         model_class = self.parent.Meta.model
         model_field = model_class._meta.get_field(self.source)
@@ -170,29 +192,13 @@ class FKOrURLField(fields.CharField):
         if isinstance(value, str):
             return super().to_representation(value)
 
-        model_class, model_field = self._get_model_and_field()
-
         # check if it's a local FK, in that case, use the HyperlinkedRelatedField
         # to serialize the value
         if value.pk is not None:
-            info = get_field_info(model_class)
-            fk_field_name = model_field.fk_field
-
-            extra_field_kwargs = self.parent.get_extra_kwargs().get(self.field_name, {})
-            field_class, field_kwargs = self.parent.build_field(
-                fk_field_name, info, model_class, 0
-            )
-            field_kwargs = self.parent.include_extra_kwargs(
-                field_kwargs, extra_field_kwargs
-            )
-            field_kwargs.pop("max_length", None)
-            field_kwargs.pop("min_length", None)
-            field_kwargs.pop("allow_blank", None)
-            _field = field_class(**field_kwargs)
-            _field.parent = self.parent
-            return _field.to_representation(value)
+            return self._field_instance.to_representation(value)
         else:
             # TODO: this breaks if there is no serializer instance, but just
             # raw data
+            _, model_field = self._get_model_and_field()
             url_field_name = model_field.url_field
             return getattr(self.parent.instance, url_field_name)

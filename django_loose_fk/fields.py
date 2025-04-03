@@ -5,6 +5,7 @@ from django.core import checks
 from django.db import models
 from django.db.models import Field
 from django.db.models.base import ModelBase, Options
+from django.utils.functional import cached_property
 
 from .constraints import FkOrURLFieldConstraint
 from .loaders import BaseLoader, default_loader
@@ -106,7 +107,7 @@ class FkOrURLField(models.Field):
             options.original_attrs["constraints"] = options.constraints
         return
 
-    @property
+    @cached_property
     def _fk_field(self) -> models.ForeignKey:
         # get the actual fields - uses private API because the app registry isn't
         # ready yet
@@ -114,7 +115,7 @@ class FkOrURLField(models.Field):
         _fields = {field.name: field for field in self.model._meta.fields}
         return _fields[self.fk_field]
 
-    @property
+    @cached_property
     def _url_field(self) -> models.URLField:
         # get the actual fields - uses private API because the app registry isn't
         # ready yet
