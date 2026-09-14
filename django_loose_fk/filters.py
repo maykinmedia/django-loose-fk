@@ -2,7 +2,6 @@
 Filter support for django-filter.
 """
 
-import logging
 from urllib.parse import urlparse
 
 from django import forms
@@ -13,8 +12,6 @@ from django_filters.filterset import FilterSet, remote_queryset as _remote_query
 
 from .fields import FkOrURLField
 from .utils import get_resource_for_path, get_subclasses, is_local
-
-logger = logging.getLogger(__name__)
 
 
 def remote_queryset(field: FkOrURLField):
