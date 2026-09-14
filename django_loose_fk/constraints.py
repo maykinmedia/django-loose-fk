@@ -21,7 +21,7 @@ class FkOrURLFieldConstraint(BaseConstraint):
         name = self._check_name.format(
             fk_field=fk_field, url_field=url_field, prefix=prefix
         )
-        super().__init__(name)
+        super().__init__(name=name)
 
     def deconstruct(self):
         path, args, kwargs = super().deconstruct()
