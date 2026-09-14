@@ -24,7 +24,7 @@ jobs:
 
     services:
       postgres:
-        image: docker.io/library/postgres:14
+        image: docker.io/library/postgres:17
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:
@@ -60,6 +60,41 @@ jobs:
         uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354  # v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  migrations:
+    name: Check for model changes not present in the migrations
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: docker.io/library/postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install psycopg
+
+      - name: Run makemigrations to check for missing migrations
+        run: django-admin makemigrations --check --dry-run
+        env:
+          DJANGO_SETTINGS_MODULE: testapp.settings
+          PYTHONPATH: .
+          PGUSER: postgres
+          PGHOST: localhost
 
   publish:
     name: Publish package to PyPI
