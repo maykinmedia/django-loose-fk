@@ -1,0 +1,14 @@
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+reportUnnecessaryTypeIgnoreComment = "error"
+
+include = ["django_loose_fk"]
+exclude = [
+    "django_loose_fk/tests",
+    "django_loose_fk/tests/*",
+    "django_loose_fk/**/tests",
+    "django_loose_fk/**/tests/*",
+    "django_loose_fk/test_*.py",
+    "**/__tests__/*"
+]
