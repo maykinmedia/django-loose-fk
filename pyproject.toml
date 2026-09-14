@@ -111,6 +111,7 @@ files = [
     {filename = "docs/conf.py"},
     {filename = "django_loose_fk/__init__.py"},
     {filename = "django_loose_fk/locale/nl/LC_MESSAGES/django.po"},
+    {filename = "django_loose_fk/locale/en/LC_MESSAGES/django.po"},
 ]
 
 
