@@ -4,25 +4,16 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 SECRET_KEY = "so-secret-i-cant-believe-you-are-looking-at-this"
 
-PG_DB = {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "postgres",
-    "USER": "postgres",
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("PGDATABASE", "django_loose_fk"),
+        "USER": os.getenv("PGUSER", "django_loose_fk"),
+        "PASSWORD": os.getenv("PGPASSWORD", "django_loose_fk"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
+        "PORT": os.getenv("DB_PORT", "5432"),
+    }
 }
-
-SQLITE_DB = {
-    "ENGINE": "django.db.backends.sqlite3",
-    "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
-}
-
-
-def get_db():
-    DB = os.getenv("DB", "sqlite")
-    MAP = {"sqlite": SQLITE_DB, "postgres": PG_DB}
-    return MAP[DB]
-
-
-DATABASES = {"default": get_db()}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
