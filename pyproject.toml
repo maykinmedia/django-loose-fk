@@ -1,0 +1,223 @@
+[build-system]
+requires = ["setuptools >= 77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-loose-fk"
+version = "1.1.2"
+description = 'Django Loose FK handles local or remote "ForeignKey" references.'
+readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Maykin Media", email = "support@maykin.nl" },
+]
+keywords = ["ForeignKey", "URL reference", "decentralization", "integrity"]
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Django",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "django>=5.2.0",
+    "django-filter>=23.1,<=25.1",
+    "djangorestframework>=3.15.0",
+    "coreapi",
+    "drf-spectacular",
+    "structlog",
+]
+
+[project.urls]
+Homepage = "https://github.com/maykinmedia/django-loose-fk"
+"Bug Tracker" = "https://github.com/maykinmedia/django-loose-fk/issues"
+"Source Code" = "https://github.com/maykinmedia/django-loose-fk"
+
+[project.optional-dependencies]
+db = ["psycopg2"]
+openapi = ["drf-spectacular"]
+tests = [
+    "psycopg2",
+    "pytest",
+    "pytest-django",
+    "tox",
+    "ruff",
+    "requests-mock",
+]
+type-checking = [
+    "pyright",
+    "django-stubs",
+    "django-stubs-ext",
+]
+coverage = [
+    "pytest-cov",
+]
+docs = [
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+release = [
+    "bump-my-version",
+]
+
+[tool.setuptools]
+zip-safe = false
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["django_loose_fk*"]
+
+# Pytest configuration
+[tool.pytest.ini_options]
+junit_family = "legacy"
+testpaths = ["tests"]
+DJANGO_SETTINGS_MODULE = "testapp.settings"
+
+[tool.coverage.run]
+branch = true
+source = ["django_loose_fk"]
+patch = ["subprocess"]
+omit = [
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+skip_covered = true
+exclude_also = [
+    "if (typing\\.)?TYPE_CHECKING:",
+    "@(typing\\.)?overload",
+    "class .*\\(.*Protocol.*\\):",
+    "@(abc\\.)?abstractmethod",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+    "\\bpass$",
+]
+
+[tool.bumpversion]
+current_version = "1.1.2"
+files = [
+    {filename = "pyproject.toml"},
+    {filename = "README.rst"},
+    {filename = "docs/conf.py"},
+    {filename = "django_loose_fk/__init__.py"},
+    {filename = "django_loose_fk/locale/nl/LC_MESSAGES/django.po"},
+    {filename = "django_loose_fk/locale/en/LC_MESSAGES/django.po"},
+]
+
+
+[tool.ruff]
+# Exclude folders and files
+exclude = [
+    "migrations",
+    "static",
+    "media",
+]
+
+# Same as Black
+line-length = 88
+indent-width = 4
+
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    # https://docs.astral.sh/ruff/rules/#isort-i
+    "I",
+    # https://docs.astral.sh/ruff/rules/#error-e
+    "E",
+    # https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "F",
+    # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "SIM",
+    # https://docs.astral.sh/ruff/rules/#perflint-perf
+    "PERF",
+    # https://docs.astral.sh/ruff/rules/#refurb-furb
+    "FURB",
+    # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "B006",
+    "B010",
+    # https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "N",
+    "TID251"
+]
+
+ignore = [
+    # Checks for assertRaises and pytest.raises context managers that catch Exception or BaseException.
+    "B017",
+    # Checks for useless expressions.
+    "B018",
+    # Checks for raise statements in exception handlers that lack a from clause.
+    "B904",
+    # Whitespace before ':' (conflicts with Black)
+    "E203",
+    # Checks for lines that exceed the specified maximum character length.
+    "E501",
+    # Do not assign a lambda expression
+    "E731",
+    # Name may be undefined from '*' import
+    "F405",
+    # Checks for CamelCase imports that are aliased to lowercase names
+    "N813",
+    # Checks for CamelCase imports that are aliased to constant-style names.
+    "N814",
+    # Checks for class variable names that follow the mixedCase convention
+    "N815",
+    # Exception name should be named with Error suffix
+    "N818",
+    # Checks for instance methods that use a name other than self for their first argument.
+    "N805",
+    # Checks for the use of non-lowercase variable names in functions
+    "N806",
+    # Checks for functions names that do not follow the snake_case naming convention.
+    "N802",
+    # Checks for module names that do not follow the snake_case naming convention or are otherwise invalid.
+    "N999",
+    # Checks for for loops that can be replaced by a list comprehension.
+    "PERF401",
+    # Checks for `if` statements that can be replaced with bool
+    "SIM103",
+    # Check for if-else-blocks that can be replaced with a ternary operator
+    "SIM108",
+    #Check for environment variables that are not capitalized.
+    "SIM112",
+    # Checks for nested if statements that can be collapsed into a single if statement
+    "SIM102",
+    # Use a single `with` statement with multiple contexts instead of nested `with` statements
+    "SIM117",
+]
+
+# Import sorting configuration (equivalent to isort)
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-wrap-aliases = false
+known-first-party = ["django_loose_fk"]
+lines-after-imports = -1
+relative-imports-order = "furthest-to-closest"
+sections = { django = ["django"] }
+section-order = [
+    "future",
+    "standard-library",
+    "django",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api.logging]
+msg = "Use `structlog.stdlib.get_logger(__name__)` instead."
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.setuptools.package-data]
+open_api_framework = ["py.typed"]

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
 from django.core import checks
 from django.db import models
 from django.db.models import Field
-from django.db.models.base import ModelBase, Options
+from django.db.models.options import Options
 from django.utils.functional import cached_property
 
 from .constraints import FkOrURLFieldConstraint
@@ -18,20 +18,19 @@ InstanceOrUrl = Union[models.Model, str]
 class FkOrURLField(models.Field):
     fk_field: str
     url_field: str
-    verbose_name: Optional[str] = None
+    verbose_name: Optional[str] = None  # type: ignore[reportIncompatibleVariableOverride]
     blank: bool = False
     null: bool = False
-    help_text: Optional[str] = ""
+    help_text: str = ""  # type: ignore[reportIncompatibleVariableOverride]
 
-    loader: BaseLoader = default_loader
+    loader: BaseLoader = cast(BaseLoader, default_loader)
 
-    name = None
-
+    db_comment: Optional[str] = None
+    name: Optional[str] = None
     _unique = False  # TODO: support this
 
-    # attributes that django.db.models.fields.Field normally sets
+    # Attributes that django.db.models.fields.Field normally sets
     creation_counter = 0
-
     remote_field = None
     is_relation = False
     primary_key = False
@@ -65,12 +64,12 @@ class FkOrURLField(models.Field):
         return hash(self.creation_counter)
 
     def contribute_to_class(
-        self, cls: ModelBase, name: str, private_only: bool = False
+        self, cls: type[models.Model], name: str, private_only: bool = False
     ):
         """
         Register the field with the model class.
         """
-        self.name = name
+        self.name = name  # type: ignore
         self.model = cls
 
         cls._meta.add_field(self)
@@ -95,13 +94,16 @@ class FkOrURLField(models.Field):
         if self.model.__module__ == "__fake__":
             return
 
+        model_name = cast(str, options.model_name)
+        app_label = cast(str, options.app_label)
+
         constraint = FkOrURLFieldConstraint(
             fk_field=self.fk_field,
             url_field=self.url_field,
-            app_label=options.app_label,
-            model_name=options.model_name,
+            app_label=app_label,
+            model_name=model_name,
         )
-        options.constraints.append(constraint)
+        options.constraints = [*options.constraints, constraint]
         # ensure this can be picked up by migrations by making it "explicitly defined"
         if "constraints" not in options.original_attrs:
             options.original_attrs["constraints"] = options.constraints
@@ -113,7 +115,7 @@ class FkOrURLField(models.Field):
         # ready yet
         # TODO: maybe it is now?
         _fields = {field.name: field for field in self.model._meta.fields}
-        return _fields[self.fk_field]
+        return cast(models.ForeignKey, _fields[self.fk_field])
 
     @cached_property
     def _url_field(self) -> models.URLField:
@@ -121,10 +123,10 @@ class FkOrURLField(models.Field):
         # ready yet
         # TODO: maybe it is now?
         _fields = {field.name: field for field in self.model._meta.fields}
-        return _fields[self.url_field]
+        return cast(models.URLField, _fields[self.url_field])
 
-    def check(self, **kwargs) -> List[checks.Error]:
-        errors = []
+    def check(self, **kwargs) -> List[checks.CheckMessage]:
+        errors: List[checks.CheckMessage] = []
         if not isinstance(self._fk_field, models.ForeignKey):
             errors.append(
                 checks.Error(
@@ -154,8 +156,8 @@ class FkOrURLField(models.Field):
         return errors
 
     @property
-    def attname(self) -> str:
-        return self.name
+    def attname(self) -> str:  # type: ignore[reportIncompatibleVariableOverride]
+        return cast(str, self.name)
 
     def get_attname_column(self) -> Tuple[str, None]:
         return self.attname, None
@@ -176,10 +178,10 @@ class FkOrURLField(models.Field):
             "blank": self.blank,
             "null": self.null,
         }
-        return (self.name, path, [], keywords)
+        return (cast(str, self.name), path, [], keywords)
 
     @property
-    def max_length(self) -> Union[None, int]:
+    def max_length(self) -> Union[None, int]:  # type: ignore[reportIncompatibleVariableOverride]
         return self._url_field.max_length
 
 
@@ -245,7 +247,7 @@ class FkOrURLDescriptor:
 
         # if we try to set loose-fk virtual model instance - it's external url
         if isinstance(value, ProxyMixin):
-            value = value._loose_fk_data["url"]
+            value = cast(str, value._loose_fk_data["url"])
 
         if isinstance(value, models.Model):
             field_name = self.fk_field_name
