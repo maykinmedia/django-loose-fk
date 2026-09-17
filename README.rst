@@ -34,7 +34,7 @@ Installation
 Requirements
 ------------
 
-* Python 3.11 or higher
+* Python 3.12 or higher
 * Setuptools 77.0.0 or higher
 * Django 5.2 or newer
 * Only the PostgreSQL database is supported

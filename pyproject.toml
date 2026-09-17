@@ -13,7 +13,7 @@ authors = [
     { name = "Maykin Media", email = "support@maykin.nl" },
 ]
 keywords = ["ForeignKey", "URL reference", "decentralization", "integrity"]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Framework :: Django",
@@ -24,9 +24,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
