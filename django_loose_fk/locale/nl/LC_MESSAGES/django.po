@@ -22,8 +22,8 @@ msgstr ""
 msgid ""
 "Bad URL \"{url}\" - object could not be fetched. This *may* be because you "
 "have insufficient read permissions."
-msgstr ""
+msgstr "Verkeerde URL \"{url}\" - object kon niet worden opgehaald. Dit *zou kunnen komen* doordat je te weinig leespermissies hebt."
 
 #: drf.py:130
 msgid "Enter a valid URL."
-msgstr ""
+msgstr "Voer een valide URL in."
