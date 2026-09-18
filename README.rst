@@ -2,7 +2,7 @@
 Django Loose FK
 ===============
 
-:Version: 1.1.2
+:Version: 1.2.0
 :Source: https://github.com/maykinmedia/django-loose-fk
 :Keywords: ``ForeignKey``, ``URL reference``, ``decentralization``, ``integrity``
 
