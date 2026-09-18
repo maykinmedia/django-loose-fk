@@ -24,7 +24,7 @@ def is_local(host: str, url: str) -> bool:
     return parsed.netloc == host
 
 
-def get_viewset_for_path(path: str) -> viewsets.ViewSet:
+def get_viewset_for_path(path: str) -> viewsets.GenericViewSet:
     """
     Look up which viewset matches a path.
     """

@@ -4,9 +4,8 @@ Django Rest Framework integration.
 Provides a custom field.
 """
 
-import logging
 from dataclasses import dataclass
-from typing import Tuple, Union
+from typing import Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -17,6 +16,7 @@ from django.http import Http404
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
+import structlog
 from rest_framework import fields, serializers
 from rest_framework.utils.model_meta import get_field_info
 
@@ -24,7 +24,7 @@ from .fields import FkOrURLField, InstanceOrUrl
 from .loaders import FetchError, FetchJsonError
 from .utils import get_resource_for_path, is_local
 
-logger = logging.getLogger(__name__)
+logger = structlog.stdlib.get_logger(__name__)
 
 
 # django tests use testserver host, but that doesn't pass core URLValidation
@@ -55,8 +55,11 @@ class Resolver:
 
     def resolve_remote(self, url: str) -> models.Model:
         # load the remote object
-        instance = self.model(**{self.field.name: url})
-        return getattr(instance, self.field.name)
+        field_name = self.field.name
+        assert field_name
+
+        instance = self.model(**{field_name: url})
+        return getattr(instance, field_name)
 
 
 class FKOrURLValidator:
@@ -74,9 +77,9 @@ class FKOrURLValidator:
         self.code = code or "bad-url"
 
     def __call__(self, url: str, serializer_field):
-        assert isinstance(
-            url, str
-        ), "You must use HyperlinkedRelatedField for the local FKs"
+        assert isinstance(url, str), (
+            "You must use HyperlinkedRelatedField for the local FKs"
+        )
 
         url_validator = URLValidator()
         try:
@@ -94,23 +97,19 @@ class FKOrURLValidator:
 
         try:
             resolver.resolve(host, url)
-        except FetchError as exc:  # remote resolution fails
-            logger.info("Could not fetch %s: %r", url, exc, exc_info=exc)
+
+        except FetchError:  # remote resolution fails
+            logger.exception("remote_resolution_failed", url=url)
             raise serializers.ValidationError(
                 self.message.format(url=url), code="bad-url"
             )
-        except FetchJsonError as exc:
-            logger.info(
-                "URL %s doesn't seem to point to a JSON endpoint: %r",
-                url,
-                exc,
-                exc_info=exc,
-            )
+        except FetchJsonError:
+            logger.exception("invalid_json_endpoint", url=url)
             raise serializers.ValidationError(
                 self.message.format(url=url), code="invalid-resource"
             )
         except (Http404, models.ObjectDoesNotExist):  # local resolution fails
-            logger.info("Local lookup for %s didn't resolve to an object.", url)
+            logger.exception("local_resolution_failed", url=url)
             raise serializers.ValidationError(
                 self.message.format(url=url), code="does_not_exist"
             )
@@ -140,31 +139,39 @@ class FKOrURLField(fields.CharField):
 
     @cached_property
     def _field_instance(self):
+        assert isinstance(self.parent, serializers.ModelSerializer)
+
+        parent = self.parent
+
         model_class, model_field = self._get_model_and_field()
         self.model_field = model_field
         info = get_field_info(model_class)
         fk_field_name = model_field.fk_field
 
-        extra_field_kwargs = self.parent.get_extra_kwargs().get(self.field_name, {})
-        field_class, field_kwargs = self.parent.build_field(
+        extra_field_kwargs = parent.get_extra_kwargs().get(self.field_name, {})
+        field_class, field_kwargs = parent.build_field(
             fk_field_name, info, model_class, 0
         )
-        field_kwargs = self.parent.include_extra_kwargs(
-            field_kwargs, extra_field_kwargs
-        )
+
+        field_kwargs = parent.include_extra_kwargs(field_kwargs, extra_field_kwargs)
         field_kwargs.pop("max_length", None)
         field_kwargs.pop("min_length", None)
         field_kwargs.pop("allow_blank", None)
+
         _field = field_class(**field_kwargs)
-        _field.parent = self.parent
+        _field.parent = parent
         return _field
 
-    def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
-        model_class = self.parent.Meta.model
-        model_field = model_class._meta.get_field(self.source)
-        return (model_class, model_field)
+    def _get_model_and_field(self) -> tuple[ModelBase, FkOrURLField]:
+        assert isinstance(self.parent, serializers.ModelSerializer)
 
-    def get_attribute(self, instance: models.Model) -> InstanceOrUrl:
+        meta = getattr(self.parent, "Meta")
+        model_class = meta.model
+
+        model_field = model_class._meta.get_field(self.source)
+        return model_class, cast(FkOrURLField, model_field)
+
+    def get_attribute(self, instance: models.Model) -> InstanceOrUrl | None:
         """
         Optimize fetching the attribute in case it's a remote URL.
 
@@ -175,7 +182,10 @@ class FKOrURLField(fields.CharField):
         url_value = getattr(instance, model_field.url_field)
         if url_value:
             return url_value
-        return super().get_attribute(instance)
+
+        result = super().get_attribute(instance)
+        assert result is None or isinstance(result, (models.Model, str))
+        return result
 
     def run_validation(self, *args, **kwargs) -> Union[models.Model, None]:
         url = super().run_validation(*args, **kwargs)
@@ -195,10 +205,14 @@ class FKOrURLField(fields.CharField):
         # check if it's a local FK, in that case, use the HyperlinkedRelatedField
         # to serialize the value
         if value.pk is not None:
-            return self._field_instance.to_representation(value)
+            result = self._field_instance.to_representation(value)
+            assert isinstance(result, str)
+            return result
         else:
             # TODO: this breaks if there is no serializer instance, but just
             # raw data
             _, model_field = self._get_model_and_field()
             url_field_name = model_field.url_field
-            return getattr(self.parent.instance, url_field_name)
+            parent = self.parent
+            assert isinstance(parent, serializers.Serializer)
+            return getattr(parent.instance, url_field_name)

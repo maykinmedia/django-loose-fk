@@ -2,7 +2,7 @@
 Filter support for django-filter.
 """
 
-import logging
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django import forms
@@ -10,11 +10,15 @@ from django.db.models import Q
 
 import django_filters
 from django_filters.filterset import FilterSet, remote_queryset as _remote_queryset
+from rest_framework.request import Request
 
 from .fields import FkOrURLField
 from .utils import get_resource_for_path, get_subclasses, is_local
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from django.db import models as _models
+
+    from django_filters.filterset import FilterSet
 
 
 def remote_queryset(field: FkOrURLField):
@@ -36,6 +40,9 @@ def register_field_default():
 
 class FkOrUrlFieldFilter(django_filters.CharFilter):
     field_class = forms.URLField
+    if TYPE_CHECKING:
+        parent: "FilterSet"
+        model: type["_models.Model"]
 
     def __init__(self, *args, **kwargs):
         self.queryset = kwargs.pop("queryset")
@@ -49,23 +56,26 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         if not value:
             return qs
 
+        field_name = self.field_name
+        assert isinstance(field_name, str)
+        request = self.parent.request
+        assert isinstance(request, Request)
+
         values = value
         if not isinstance(values, list):
             values = [values]
 
         parsed_values = [urlparse(value) for value in values]
-        host = self.parent.request.get_host()
+        host = request.get_host()
 
-        model_field_list = self.field_name.split("__")
+        model_field_list = field_name.split("__")
         model_field_path = (
-            f"{self.field_name.rsplit('__', 1)[0]}__"
-            if len(model_field_list) > 1
-            else None
+            f"{field_name.rsplit('__', 1)[0]}__" if len(model_field_list) > 1 else None
         )
         model_field = self.model._meta.get_field(model_field_list.pop(0))
 
         for field_name in model_field_list:
-            model_field = model_field.target_field.model._meta.get_field(field_name)
+            model_field = model_field.target_field.model._meta.get_field(field_name)  # pyright: ignore[reportAttributeAccessIssue]
 
         filters = self.get_filters(model_field, parsed_values, host, model_field_path)
 

@@ -1,9 +1,7 @@
-from typing import List, Tuple
-
 from django.core.exceptions import EmptyResultSet
 from django.db import models
 from django.db.models.fields.related_lookups import RelatedIn
-from django.db.models.lookups import Exact as _Exact, In as _In
+from django.db.models.lookups import Exact as _Exact, In as _In, Lookup
 
 from .fields import FkOrURLField
 from .virtual_models import ProxyMixin
@@ -21,10 +19,10 @@ def get_normalized_value(value) -> tuple:
     return value
 
 
-class FkOrURLFieldMixin:
+class FkOrURLFieldMixin(Lookup):
     def _split_lhs(
         self, compiler, connection, lhs=None
-    ) -> Tuple[str, tuple, str, tuple]:
+    ) -> tuple[str, tuple, str, tuple]:
         target = self.lhs.target
         db_table = target.model._meta.db_table
 
@@ -73,10 +71,10 @@ class In(FkOrURLFieldMixin, RelatedIn):
 
     lookup_name = "in"
 
-    def process_lhs(self, compiler, connection, lhs=None):
+    def process_lhs(self, compiler, connection, lhs=None):  # type: ignore[override]
         return self._split_lhs(compiler, connection, lhs=lhs)
 
-    def process_remote_rhs(self) -> List[str]:
+    def process_remote_rhs(self) -> list[str]:
         """
         Extract URLs to filter on for remote RHS.
 
@@ -84,7 +82,7 @@ class In(FkOrURLFieldMixin, RelatedIn):
         """
         return [obj for obj in self.rhs if isinstance(obj, str)]
 
-    def process_rhs(self, compiler, connection):
+    def process_rhs(self, compiler, connection):  # type: ignore[override]
         if self.rhs_is_direct_value():
             remote_rhs = self.process_remote_rhs()
 
@@ -138,6 +136,9 @@ class In(FkOrURLFieldMixin, RelatedIn):
         if not fk_rhs_sql and not url_rhs_sql:
             raise EmptyResultSet()
 
+        url_sql: tuple[str, tuple] | None = None
+        fk_sql: tuple[str, tuple] | None = None
+
         if fk_rhs_sql:
             fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
             fk_sql = (
@@ -153,11 +154,14 @@ class In(FkOrURLFieldMixin, RelatedIn):
             )
 
         if not fk_rhs_sql:
+            assert url_sql is not None
             return url_sql
 
         if not url_rhs_sql:
+            assert fk_sql is not None
             return fk_sql
 
+        assert url_sql is not None and fk_sql is not None
         params = url_sql[1] + fk_sql[1]
         sql = "({} OR {})".format(url_sql[0], fk_sql[0])
 

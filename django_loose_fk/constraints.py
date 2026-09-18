@@ -21,7 +21,7 @@ class FkOrURLFieldConstraint(BaseConstraint):
         name = self._check_name.format(
             fk_field=fk_field, url_field=url_field, prefix=prefix
         )
-        super().__init__(name)
+        super().__init__(name=name)
 
     def deconstruct(self):
         path, args, kwargs = super().deconstruct()
@@ -51,7 +51,9 @@ class FkOrURLFieldConstraint(BaseConstraint):
             # one of both MUST be filled and they cannot be filled both at the
             # same time
             check = fk_filled | url_filled
-            self._check_constraint = models.CheckConstraint(check=check, name=self.name)
+            self._check_constraint = models.CheckConstraint(
+                condition=check, name=self.name
+            )
 
         return self._check_constraint
 
