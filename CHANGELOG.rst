@@ -2,6 +2,19 @@
 Changelog
 =========
 
+1.2.0 (2026-09-18)
+==================
+
+* Pin GitHub Actions to specific version
+* Replace `Black` and `isort` with Ruff
+* Add type checking
+* Drop support for Python `3.10` and `3.11`, and Django `3.2`
+* Add support for Python `3.14`
+* Migrate project configuration from `setup.cfg` to `pyproject.toml`
+* Add `structlog` for structured logging
+* Add translations
+* Remove `check_sphinx.py`, replace with simpler commands
+
 1.1.2 (2025-04-03)
 ==================
 
