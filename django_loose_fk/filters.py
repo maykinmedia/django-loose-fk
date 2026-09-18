@@ -2,15 +2,15 @@
 Filter support for django-filter.
 """
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django import forms
-from django.db.models import ForeignKey, Q
-from django.http import HttpRequest
+from django.db.models import Q
 
 import django_filters
 from django_filters.filterset import FilterSet, remote_queryset as _remote_queryset
+from rest_framework.request import Request
 
 from .fields import FkOrURLField
 from .utils import get_resource_for_path, get_subclasses, is_local
@@ -56,8 +56,10 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         if not value:
             return qs
 
-        field_name = cast(str, self.field_name)
-        request = cast("HttpRequest", self.parent.request)
+        field_name = self.field_name
+        assert isinstance(field_name, str)
+        request = self.parent.request
+        assert isinstance(request, Request)
 
         values = value
         if not isinstance(values, list):
@@ -73,9 +75,7 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         model_field = self.model._meta.get_field(model_field_list.pop(0))
 
         for field_name in model_field_list:
-            model_field = cast(
-                ForeignKey, model_field
-            ).target_field.model._meta.get_field(field_name)
+            model_field = model_field.target_field.model._meta.get_field(field_name)  # pyright: ignore[reportAttributeAccessIssue]
 
         filters = self.get_filters(model_field, parsed_values, host, model_field_path)
 

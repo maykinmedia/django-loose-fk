@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union, cast
+from typing import Union, cast
 
 from django.core import checks
 from django.db import models
@@ -18,15 +18,15 @@ InstanceOrUrl = Union[models.Model, str]
 class FkOrURLField(models.Field):
     fk_field: str
     url_field: str
-    verbose_name: Optional[str] = None  # type: ignore[reportIncompatibleVariableOverride]
+    verbose_name: str | None = None  # type: ignore[reportIncompatibleVariableOverride]
     blank: bool = False
     null: bool = False
     help_text: str = ""  # type: ignore[reportIncompatibleVariableOverride]
 
     loader: BaseLoader = cast(BaseLoader, default_loader)
 
-    db_comment: Optional[str] = None
-    name: Optional[str] = None
+    db_comment: str | None = None
+    name: str | None = None
     _unique = False  # TODO: support this
 
     # Attributes that django.db.models.fields.Field normally sets
@@ -94,8 +94,10 @@ class FkOrURLField(models.Field):
         if self.model.__module__ == "__fake__":
             return
 
-        model_name = cast(str, options.model_name)
-        app_label = cast(str, options.app_label)
+        model_name = options.model_name
+        app_label = options.app_label
+        assert isinstance(model_name, str)
+        assert isinstance(app_label, str)
 
         constraint = FkOrURLFieldConstraint(
             fk_field=self.fk_field,
@@ -115,18 +117,24 @@ class FkOrURLField(models.Field):
         # ready yet
         # TODO: maybe it is now?
         _fields = {field.name: field for field in self.model._meta.fields}
-        return cast(models.ForeignKey, _fields[self.fk_field])
+        field = _fields[self.fk_field]
+        assert isinstance(field, models.ForeignKey)
+        return field
 
     @cached_property
-    def _url_field(self) -> models.URLField:
+    def _url_field(self) -> models.Field:
         # get the actual fields - uses private API because the app registry isn't
         # ready yet
         # TODO: maybe it is now?
         _fields = {field.name: field for field in self.model._meta.fields}
-        return cast(models.URLField, _fields[self.url_field])
+        field = _fields[self.url_field]
+        # Typed as `models.Field` (not `URLField`): in practice this can also
+        # be a `zgw_consumers.models.fields.ServiceUrlField`.
+        assert isinstance(field, models.Field)
+        return field
 
-    def check(self, **kwargs) -> List[checks.CheckMessage]:
-        errors: List[checks.CheckMessage] = []
+    def check(self, **kwargs) -> list[checks.CheckMessage]:
+        errors: list[checks.CheckMessage] = []
         if not isinstance(self._fk_field, models.ForeignKey):
             errors.append(
                 checks.Error(
@@ -159,7 +167,7 @@ class FkOrURLField(models.Field):
     def attname(self) -> str:  # type: ignore[reportIncompatibleVariableOverride]
         return cast(str, self.name)
 
-    def get_attname_column(self) -> Tuple[str, None]:
+    def get_attname_column(self) -> tuple[str, None]:
         return self.attname, None
 
     def clone(self):
@@ -227,7 +235,7 @@ class FkOrURLDescriptor:
         remote_loader = self.field.loader
         return remote_loader.load(url=url_value, model=remote_model)
 
-    def __set__(self, instance: models.Model, value: Optional[InstanceOrUrl]):
+    def __set__(self, instance: models.Model, value: InstanceOrUrl | None):
         """
         Set the related instance through the forward relation.
 

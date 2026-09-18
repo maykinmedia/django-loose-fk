@@ -5,7 +5,7 @@ Provides a custom field.
 """
 
 from dataclasses import dataclass
-from typing import Tuple, Union, cast
+from typing import Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -55,7 +55,9 @@ class Resolver:
 
     def resolve_remote(self, url: str) -> models.Model:
         # load the remote object
-        field_name = cast(str, self.field.name)
+        field_name = self.field.name
+        assert field_name
+
         instance = self.model(**{field_name: url})
         return getattr(instance, field_name)
 
@@ -137,7 +139,9 @@ class FKOrURLField(fields.CharField):
 
     @cached_property
     def _field_instance(self):
-        parent = cast("serializers.ModelSerializer", self.parent)
+        assert isinstance(self.parent, serializers.ModelSerializer)
+
+        parent = self.parent
 
         model_class, model_field = self._get_model_and_field()
         self.model_field = model_field
@@ -158,12 +162,14 @@ class FKOrURLField(fields.CharField):
         _field.parent = parent
         return _field
 
-    def _get_model_and_field(self) -> Tuple[ModelBase, FkOrURLField]:
-        parent = cast("serializers.ModelSerializer", self.parent)
-        model_class = cast(ModelBase, parent.Meta.model)  # type: ignore[attr-defined]
+    def _get_model_and_field(self) -> tuple[ModelBase, FkOrURLField]:
+        assert isinstance(self.parent, serializers.ModelSerializer)
 
-        model_field = cast(FkOrURLField, model_class._meta.get_field(self.source))
-        return (model_class, model_field)
+        meta = getattr(self.parent, "Meta")
+        model_class = meta.model
+
+        model_field = model_class._meta.get_field(self.source)
+        return model_class, cast(FkOrURLField, model_field)
 
     def get_attribute(self, instance: models.Model) -> InstanceOrUrl | None:
         """
@@ -177,7 +183,9 @@ class FKOrURLField(fields.CharField):
         if url_value:
             return url_value
 
-        return cast(InstanceOrUrl | None, super().get_attribute(instance))
+        result = super().get_attribute(instance)
+        assert result is None or isinstance(result, (models.Model, str))
+        return result
 
     def run_validation(self, *args, **kwargs) -> Union[models.Model, None]:
         url = super().run_validation(*args, **kwargs)
@@ -197,11 +205,14 @@ class FKOrURLField(fields.CharField):
         # check if it's a local FK, in that case, use the HyperlinkedRelatedField
         # to serialize the value
         if value.pk is not None:
-            return cast(str, self._field_instance.to_representation(value))
+            result = self._field_instance.to_representation(value)
+            assert isinstance(result, str)
+            return result
         else:
             # TODO: this breaks if there is no serializer instance, but just
             # raw data
             _, model_field = self._get_model_and_field()
             url_field_name = model_field.url_field
-            parent = cast("serializers.Serializer", self.parent)
+            parent = self.parent
+            assert isinstance(parent, serializers.Serializer)
             return getattr(parent.instance, url_field_name)

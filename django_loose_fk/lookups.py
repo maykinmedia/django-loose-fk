@@ -1,5 +1,3 @@
-from typing import List, Tuple
-
 from django.core.exceptions import EmptyResultSet
 from django.db import models
 from django.db.models.fields.related_lookups import RelatedIn
@@ -24,7 +22,7 @@ def get_normalized_value(value) -> tuple:
 class FkOrURLFieldMixin(Lookup):
     def _split_lhs(
         self, compiler, connection, lhs=None
-    ) -> Tuple[str, tuple, str, tuple]:
+    ) -> tuple[str, tuple, str, tuple]:
         target = self.lhs.target
         db_table = target.model._meta.db_table
 
@@ -76,7 +74,7 @@ class In(FkOrURLFieldMixin, RelatedIn):
     def process_lhs(self, compiler, connection, lhs=None):  # type: ignore[override]
         return self._split_lhs(compiler, connection, lhs=lhs)
 
-    def process_remote_rhs(self) -> List[str]:
+    def process_remote_rhs(self) -> list[str]:
         """
         Extract URLs to filter on for remote RHS.
 
@@ -138,8 +136,8 @@ class In(FkOrURLFieldMixin, RelatedIn):
         if not fk_rhs_sql and not url_rhs_sql:
             raise EmptyResultSet()
 
-        url_sql: Tuple[str, tuple] | None = None
-        fk_sql: Tuple[str, tuple] | None = None
+        url_sql: tuple[str, tuple] | None = None
+        fk_sql: tuple[str, tuple] | None = None
 
         if fk_rhs_sql:
             fk_rhs_sql = self.get_rhs_op(connection, fk_rhs_sql)
