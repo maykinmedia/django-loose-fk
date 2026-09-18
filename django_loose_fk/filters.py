@@ -12,6 +12,7 @@ import django_filters
 from django_filters.filterset import FilterSet, remote_queryset as _remote_queryset
 from rest_framework.request import Request
 
+from .exception import LocalResourceNotFound
 from .fields import FkOrURLField
 from .utils import get_resource_for_path, get_subclasses, is_local
 
@@ -102,7 +103,14 @@ class FkOrUrlFieldFilter(django_filters.CharFilter):
         for value in parsed_values:
             local = is_local(host, value.geturl())
             if local:
-                local_object = get_resource_for_path(value.path)
+                try:
+                    local_object = get_resource_for_path(value.path)
+                except LocalResourceNotFound:
+                    # force no match at all, instead isnull=True filter
+                    if self.lookup_expr == "in":
+                        continue  # skip this filter
+                    return {"pk__in": []}  # exact: whole filter must match nothing
+
                 if self.instance_path:
                     for bit in self.instance_path.split("."):
                         local_object = getattr(local_object, bit)
