@@ -8,6 +8,8 @@ from django.urls import Resolver404, get_resolver, get_script_prefix
 from rest_framework import viewsets
 from rest_framework.request import Request
 
+from .exception import LocalResourceNotFound
+
 
 def is_local(host: str, url: str) -> bool:
     """
@@ -63,7 +65,11 @@ def get_resource_for_path(path: str) -> models.Model:
     lookup_url_kwarg = viewset.lookup_url_kwarg or viewset.lookup_field
     filter_kwargs = {viewset.lookup_field: viewset.kwargs[lookup_url_kwarg]}
 
-    return queryset.get(**filter_kwargs)
+    try:
+        return queryset.get(**filter_kwargs)
+    except queryset.model.DoesNotExist:
+        # Raise instead of None: used outside filters too, prefer an explicit error
+        raise LocalResourceNotFound(path)
 
 
 def get_subclasses(cls):
