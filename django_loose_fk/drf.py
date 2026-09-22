@@ -20,6 +20,7 @@ import structlog
 from rest_framework import fields, serializers
 from rest_framework.utils.model_meta import get_field_info
 
+from .exception import LocalResourceNotFound
 from .fields import FkOrURLField, InstanceOrUrl
 from .loaders import FetchError, FetchJsonError
 from .utils import get_resource_for_path, is_local
@@ -108,7 +109,11 @@ class FKOrURLValidator:
             raise serializers.ValidationError(
                 self.message.format(url=url), code="invalid-resource"
             )
-        except (Http404, models.ObjectDoesNotExist):  # local resolution fails
+        except (
+            Http404,
+            models.ObjectDoesNotExist,
+            LocalResourceNotFound,
+        ):  # local resolution fails
             logger.exception("local_resolution_failed", url=url)
             raise serializers.ValidationError(
                 self.message.format(url=url), code="does_not_exist"
