@@ -118,6 +118,50 @@ def test_filter_zaaktype_remote_url(api_client):
     assert response.data[0]["url"] == f"http://testserver{zaak_url}"
 
 
+def test_filter_zaaktype_remote_url_not_found_exact(api_client):
+    url = reverse("zaak-list")
+    Zaak.objects.create(name="test", zaaktype="https://testserver.com/zaaktypen/123")
+    Zaak.objects.create(name="test", zaaktype="https://testserver.com/zaaktypen/456")
+    response = api_client.get(
+        url,
+        {
+            "zaaktype": "https://testserver.com/zaaktypen/678",
+        },
+        HTTP_HOST="testserver.com",
+    )
+    assert len(response.data) == 0
+
+
+def test_filter_zaaktype_remote_url_not_found_in(api_client):
+    # one value
+    url = reverse("zaak-list")
+    zaak = Zaak.objects.create(
+        name="test", zaaktype="https://testserver.com/zaaktypen/123"
+    )
+    zaak_url = reverse("zaak-detail", kwargs={"pk": zaak.pk})
+    Zaak.objects.create(name="test", zaaktype="https://testserver.com/zaaktypen/456")
+    response = api_client.get(
+        url,
+        {
+            "zaaktype__in": "https://testserver.com/zaaktypen/123,https://testserver.com/zaaktypen/678"
+        },
+        HTTP_HOST="testserver.com",
+    )
+
+    assert len(response.data) == 1
+    assert response.data[0]["url"] == f"http://testserver.com{zaak_url}"
+
+    # no values
+    response = api_client.get(
+        url,
+        {
+            "zaaktype__in": "https://testserver.com/zaaktypen/678,https://testserver.com/zaaktypen/999"
+        },
+        HTTP_HOST="testserver.com",
+    )
+    assert len(response.data) == 0
+
+
 def test_filter_multiple_zaaktypes_remote_url(api_client):
     url = reverse("zaak-list")
     zaak = Zaak.objects.create(

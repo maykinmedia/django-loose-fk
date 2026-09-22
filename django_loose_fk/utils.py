@@ -8,6 +8,8 @@ from django.urls import Resolver404, get_resolver, get_script_prefix
 from rest_framework import viewsets
 from rest_framework.request import Request
 
+from .exception import LocalResourceNotFound
+
 
 def is_local(host: str, url: str) -> bool:
     """
@@ -32,8 +34,8 @@ def get_viewset_for_path(path: str) -> viewsets.GenericViewSet:
     resolver = get_resolver()
     try:
         resolver_match = resolver.resolve(path)
-    except Resolver404 as exc:
-        raise models.ObjectDoesNotExist("URL did not resolve") from exc
+    except Resolver404:
+        raise LocalResourceNotFound(path)
     callback, callback_args, callback_kwargs = resolver_match
 
     # TODO: add support for APIView
@@ -63,7 +65,11 @@ def get_resource_for_path(path: str) -> models.Model:
     lookup_url_kwarg = viewset.lookup_url_kwarg or viewset.lookup_field
     filter_kwargs = {viewset.lookup_field: viewset.kwargs[lookup_url_kwarg]}
 
-    return queryset.get(**filter_kwargs)
+    try:
+        return queryset.get(**filter_kwargs)
+    except queryset.model.DoesNotExist:
+        # Raise instead of None: used outside filters too, prefer an explicit error
+        raise LocalResourceNotFound(path)
 
 
 def get_subclasses(cls):
