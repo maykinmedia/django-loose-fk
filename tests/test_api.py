@@ -118,6 +118,78 @@ def test_filter_zaaktype_remote_url(api_client):
     assert response.data[0]["url"] == f"http://testserver{zaak_url}"
 
 
+def test_filter_zaaktype_remote_url_not_found_exact(api_client):
+    url = reverse("zaak-list")
+
+    # locals zaaktypes
+    zaaktype = ZaakType.objects.create()
+    zaaktype_local_path = reverse("zaaktype-detail", kwargs={"pk": zaaktype.pk})
+    zaaktype_local_url = f"http://testserver.com{zaaktype_local_path}"
+    Zaak.objects.create(name="test", zaaktype=zaaktype_local_url)
+
+    # local exists
+    response = api_client.get(
+        url,
+        {"zaaktype": zaaktype_local_path},
+        HTTP_HOST="testserver.com",
+    )
+    assert len(response.data) == 1
+
+    # zaaktype/678 local does not exist
+    response = api_client.get(
+        url,
+        {"zaaktype": "https://testserver.com/zaaktypen/678"},
+        HTTP_HOST="testserver.com",
+    )
+    assert len(response.data) == 0
+
+
+def test_filter_zaaktype_remote_url_not_found_in(api_client):
+    # one value
+    url = reverse("zaak-list")
+
+    # Local zaaktype
+    zaaktype_local = ZaakType.objects.create(name="test")
+    zaaktype_local_path = reverse("zaaktype-detail", kwargs={"pk": zaaktype_local.pk})
+    zaaktype_local_url = f"http://testserver.com{zaaktype_local_path}"
+    zaak = Zaak.objects.create(name="test", zaaktype=zaaktype_local)
+
+    zaak_url = reverse("zaak-detail", kwargs={"pk": zaak.pk})
+    Zaak.objects.create(name="test", zaaktype="https://example.com/zaaktypen/456")
+
+    # case both exists, local and remote
+    # zaaktype1 local exists, zaaktype/456 remote
+    response = api_client.get(
+        url,
+        {"zaaktype__in": f"{zaaktype_local_url},https://example.com/zaaktypen/456"},
+        HTTP_HOST="testserver.com",
+    )
+
+    assert len(response.data) == 2
+    assert response.data[0]["url"] == f"http://testserver.com{zaak_url}"
+
+    # case one exist1
+    # zaaktype1 local exists, zaaktype/678 local does not exist
+    response = api_client.get(
+        url,
+        {"zaaktype__in": f"{zaaktype_local_url},https://testserver.com/zaaktypen/678"},
+        HTTP_HOST="testserver.com",
+    )
+
+    assert len(response.data) == 1
+    assert response.data[0]["url"] == f"http://testserver.com{zaak_url}"
+
+    # no locals zaaktypes
+    response = api_client.get(
+        url,
+        {
+            "zaaktype__in": "https://testserver.com/zaaktypen/678,https://testserver.com/zaaktypen/999"
+        },
+        HTTP_HOST="testserver.com",
+    )
+    assert len(response.data) == 0
+
+
 def test_filter_multiple_zaaktypes_remote_url(api_client):
     url = reverse("zaak-list")
     zaak = Zaak.objects.create(
