@@ -2,6 +2,31 @@
 Changelog
 =========
 
+2.0.0 (2026-09-29)
+==================
+
+**Breaking changes**
+
+* Drop support for Python ``3.10`` and ``3.11``, and Django ``3.2`` and ``4.2``
+
+**New features**
+
+* Add support for Python ``3.14``
+* Add type checking
+* Add ``structlog`` for structured logging
+* Add translations
+
+**Bugfixes**
+
+* [open-zaak/open-zaak#2549] Fix ``get_resource_for_path`` when the queried object does not exist
+
+**Maintenance**
+
+* Pin GitHub Actions to specific versions
+* Replace ``Black`` and ``isort`` with Ruff
+* Migrate project configuration from ``setup.cfg`` to ``pyproject.toml``
+* Remove ``check_sphinx.py`` and replace it with simpler commands
+
 1.1.2 (2025-04-03)
 ==================
 
