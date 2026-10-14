@@ -259,8 +259,10 @@ class FkOrURLDescriptor:
 
         if isinstance(value, models.Model):
             field_name = self.fk_field_name
+            setattr(instance, self.url_field_name, "")
         elif isinstance(value, str):
             field_name = self.url_field_name
+            setattr(instance, self.fk_field_name, None)
         elif value is None:
             setattr(instance, self.url_field_name, "")
             setattr(instance, self.fk_field_name, None)
