@@ -2,6 +2,13 @@
 Changelog
 =========
 
+2.0.1 (2026-10-15)
+==================
+
+**Bugfixes**
+
+* Fixed bug which prevented changing the 'FK' to be changed from a local to a remote source and vice versa.
+
 2.0.0 (2026-09-29)
 ==================
 
