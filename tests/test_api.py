@@ -59,6 +59,8 @@ def test_write_local_url(api_client):
     assert response.status_code == 201
     zaak = Zaak.objects.get()
     assert zaak.zaaktype == zaaktype
+    assert zaak.extern_zaaktype == ""
+    assert zaak._zaaktype_id == zaaktype.pk
 
 
 def test_write_remote_url(api_client):
@@ -73,7 +75,55 @@ def test_write_remote_url(api_client):
         assert response.status_code == 201
         zaak = Zaak.objects.get()
         assert zaak.extern_zaaktype == zaaktype_url
-        assert zaak.zaaktype.pk is None
+        assert zaak._zaaktype is None
+        assert zaak.zaaktype == zaaktype_url
+
+
+def test_overwrite_local_to_remote(api_client):
+    zaaktype = ZaakType.objects.create(name="test")
+    zaak = Zaak.objects.create(name="test", zaaktype=zaaktype)
+
+    remote_zaaktype_url = "https://example.com/zaaktypen/123"
+
+    with requests_mock.Mocker() as m:
+        m.get(remote_zaaktype_url, json={"url": remote_zaaktype_url, "name": "test"})
+
+        response = api_client.patch(
+            reverse("zaak-detail", kwargs={"pk": zaak.pk}),
+            {"zaaktype": remote_zaaktype_url},
+        )
+
+        assert response.status_code == 200
+        zaak.refresh_from_db()
+        assert zaak.extern_zaaktype == remote_zaaktype_url
+        assert zaak._zaaktype is None
+        assert zaak.zaaktype == remote_zaaktype_url
+
+
+def test_overwrite_remote_to_local(api_client):
+    remote_zaaktype_url = "https://example.com/zaaktypen/123"
+
+    with requests_mock.Mocker() as m:
+        m.get(
+            "https://example.com/zaaktypen/123",
+            json={"url": remote_zaaktype_url, "name": "test"},
+        )
+
+        zaak = Zaak.objects.create(name="test", zaaktype=remote_zaaktype_url)
+
+    zaaktype = ZaakType.objects.create(name="test")
+    local_zaaktype_url = reverse("zaaktype-detail", kwargs={"pk": zaaktype.pk})
+
+    response = api_client.patch(
+        reverse("zaak-detail", kwargs={"pk": zaak.pk}),
+        {"zaaktype": f"http://testserver{local_zaaktype_url}"},
+    )
+
+    assert response.status_code == 200
+    zaak.refresh_from_db()
+    assert zaak.zaaktype == zaaktype
+    assert zaak.extern_zaaktype == ""
+    assert zaak._zaaktype_id == zaaktype.pk
 
 
 def test_write_invalid_local_url(api_client):

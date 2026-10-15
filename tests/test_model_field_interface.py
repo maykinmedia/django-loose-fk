@@ -19,14 +19,20 @@ def test_create_local_fk():
     zaak = Zaak.objects.create(name="test", zaaktype=zt)
 
     assert zaak.pk is not None
-    assert zaak._zaaktype == zt
+    assert zaak._zaaktype == zt == zaak.zaaktype
+    assert zaak.extern_zaaktype == ""
 
 
 def test_create_remote_url():
-    zaak = Zaak.objects.create(name="test", zaaktype="https://example.com/zt/123")
+    external_zaaktype = "https://example.com/zt/123"
+    with requests_mock.Mocker() as m:
+        m.get(external_zaaktype, json={"url": external_zaaktype, "name": "test"})
 
-    assert zaak.pk is not None
-    assert zaak.extern_zaaktype == "https://example.com/zt/123"
+        zaak = Zaak.objects.create(name="test", zaaktype=external_zaaktype)
+
+        assert zaak.pk is not None
+        assert zaak._zaaktype is None
+        assert zaak.extern_zaaktype == "https://example.com/zt/123" == zaak.zaaktype
 
 
 def test_accessor_local_fk():
@@ -36,6 +42,38 @@ def test_accessor_local_fk():
 
     assert isinstance(zaak.zaaktype, ZaakType)
     assert zaak.zaaktype == zt
+
+
+def test_update_remote_to_local():
+    local_zaaktype = ZaakType.objects.create(name="test")
+
+    external_zaaktype = "https://example.com/zt/123"
+    with requests_mock.Mocker() as m:
+        m.get(external_zaaktype, json={"url": external_zaaktype, "name": "test"})
+
+        zaak = Zaak.objects.create(name="test", zaaktype=external_zaaktype)
+        zaak.zaaktype = local_zaaktype
+        zaak.save()
+
+    assert zaak.pk is not None
+    assert zaak._zaaktype == local_zaaktype == zaak.zaaktype
+    assert zaak.extern_zaaktype == ""
+
+
+def test_update_local_to_remote():
+    local_zaaktype = ZaakType.objects.create(name="test")
+    zaak = Zaak.objects.create(name="test", zaaktype=local_zaaktype)
+
+    external_zaaktype = "https://example.com/zt/123"
+    with requests_mock.Mocker() as m:
+        m.get(external_zaaktype, json={"url": external_zaaktype, "name": "test"})
+
+        zaak.zaaktype = external_zaaktype
+        zaak.save()
+
+        assert zaak.pk is not None
+        assert zaak._zaaktype is None
+        assert zaak.extern_zaaktype == "https://example.com/zt/123" == zaak.zaaktype
 
 
 def test_accessor_remote_url():

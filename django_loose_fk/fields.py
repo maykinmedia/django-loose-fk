@@ -258,13 +258,16 @@ class FkOrURLDescriptor:
             value = cast(str, value._loose_fk_data["url"])
 
         if isinstance(value, models.Model):
-            field_name = self.fk_field_name
+            setattr(instance, self.fk_field_name, value)
+            setattr(instance, self.url_field_name, "")
+            return
         elif isinstance(value, str):
-            field_name = self.url_field_name
+            setattr(instance, self.url_field_name, value)
+            setattr(instance, self.fk_field_name, None)
+            return
         elif value is None:
             setattr(instance, self.url_field_name, "")
             setattr(instance, self.fk_field_name, None)
             return
-        else:
-            raise TypeError(f"value is of type {type(value)}, which is not supported.")
-        setattr(instance, field_name, value)
+
+        raise TypeError(f"value is of type {type(value)}, which is not supported.")
