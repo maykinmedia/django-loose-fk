@@ -81,23 +81,23 @@ def test_write_remote_url(api_client):
 
 def test_overwrite_local_to_remote(api_client):
     zaaktype = ZaakType.objects.create(name="test")
-    zaaktype_url = reverse("zaaktype-detail", kwargs={"pk": zaaktype.pk})
-    zaak = Zaak.objects.create(name="test", zaaktype=f"http://testserver{zaaktype_url}")
+    zaak = Zaak.objects.create(name="test", zaaktype=zaaktype)
 
-    zaaktype_url = "https://example.com/zaaktypen/123"
+    remote_zaaktype_url = "https://example.com/zaaktypen/123"
 
     with requests_mock.Mocker() as m:
-        m.get(zaaktype_url, json={"url": zaaktype_url, "name": "test"})
+        m.get(remote_zaaktype_url, json={"url": remote_zaaktype_url, "name": "test"})
 
         response = api_client.patch(
-            reverse("zaak-detail", kwargs={"pk": zaak.pk}), {"zaaktype": zaaktype_url}
+            reverse("zaak-detail", kwargs={"pk": zaak.pk}),
+            {"zaaktype": remote_zaaktype_url},
         )
 
         assert response.status_code == 200
         zaak.refresh_from_db()
-        assert zaak.extern_zaaktype == zaaktype_url
+        assert zaak.extern_zaaktype == remote_zaaktype_url
         assert zaak._zaaktype is None
-        assert zaak.zaaktype == zaaktype_url
+        assert zaak.zaaktype == remote_zaaktype_url
 
 
 def test_overwrite_remote_to_local(api_client):
